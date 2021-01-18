@@ -20,8 +20,7 @@ from unet3d.metrics import get_evaluation_metric
 from unet3d.utils import get_number_of_learnable_parameters
 from unet3d.utils import get_logger, get_tensorboard_formatter
 
-
-os.environ['CUDA_VISIBLE_DEVICES'] = '0'
+#os.environ['CUDA_VISIBLE_DEVICES'] = '0, 1, 2'
 
 
 logger = get_logger('UNet3DTrain')
@@ -170,6 +169,8 @@ def main():
     # Create evaluation metric
     eval_criterion = get_evaluation_metric(config)
 
+    import pdb
+    pdb.set_trace()
     # Create data loaders
     loaders = get_train_loaders(config)
 

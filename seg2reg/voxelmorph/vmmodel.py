@@ -164,9 +164,9 @@ class ShapeMorph3d(nn.Module):
         super(ShapeMorph3d, self).__init__()
         self.unet = UNet(in_channels, forseg=False)
         self.spatial_transform = SpatialTransformation()
-        if use_gpu:
-            self.unet = self.unet.cuda()
-            self.spatial_transform = self.spatial_transform.cuda()
+        #if use_gpu:
+        #    self.unet = self.unet.cuda()
+        #    self.spatial_transform = self.spatial_transform.cuda()
         self.num_mods = num_mods
 
     def forward(self, moving_image, moving_seg, fixed_image, fixed_seg):

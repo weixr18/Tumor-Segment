@@ -279,8 +279,6 @@ def get_train_loaders(config):
     # assert set(loaders_config['train']['file_paths']).isdisjoint(loaders_config['val']['file_paths']), \
     #   "Train and validation 'file_paths' overlap. One cannot use validation data for training!"
 
-    import pdb
-    pdb.set_trace()
     files = open(loaders_config['train']['file_paths'][0], 'r')
     files = files.readlines()
     loaders_config['train']['file_paths'] = files
