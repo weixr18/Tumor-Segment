@@ -31,7 +31,7 @@ def load_config(train):
     parser = argparse.ArgumentParser(description='UNet3D')
     if train:
         parser.add_argument('--config', type=str, help='Path to the YAML config file', required=False,
-                            default='train_together.yaml')
+                            default='conf/train_together.yaml')
     else:
         parser.add_argument('--config', type=str, help='Path to the YAML config file', required=False,
                             default='../resources/3DUnet_lightsheet_nuclei/test_config.yaml')
