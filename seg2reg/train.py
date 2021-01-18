@@ -169,8 +169,6 @@ def main():
     # Create evaluation metric
     eval_criterion = get_evaluation_metric(config)
 
-    import pdb
-    pdb.set_trace()
     # Create data loaders
     loaders = get_train_loaders(config)
 
@@ -180,6 +178,8 @@ def main():
     # Create learning rate adjustment strategy
     lr_scheduler = _create_lr_scheduler(config, optimizer)
 
+    import pdb
+    pdb.set_trace()
     # Create model trainer
     trainer = _create_trainer(config, model=model, optimizer=optimizer, lr_scheduler=lr_scheduler,
                               loss_criterion=None, eval_criterion=eval_criterion, loaders=loaders)

@@ -33,7 +33,7 @@ trainer:
   baseline_model: true
   transformed: true
   # path to the checkpoint directory
-  checkpoint_dir: "/home/cwx/Datasets/bs_going" #single
+  checkpoint_dir: "/Extra/grad/data2019/bs_going" #single
   # path to latest checkpoint; if provided the training will be resumed from that checkpoint
   #pre_trained: "/home/cwx/Datasets/rs_going/best_checkpoint.pytorch" #"/home/cwx/Datasets/single_2/best_checkpoint.pytorch"
   # how many iterations between validations
@@ -103,7 +103,7 @@ loaders:
   train:
     # paths to the training datasets
     file_paths:
-      - './train_rs.list'
+      - 'conf/fake.list'
       #- '/home/adrian/Datasets/LateralRootPrimordia/t00045_s01_uint8_cropped_gt.h5'
 
     # SliceBuilder configuration, i.e. how to iterate over the input volume patch-by-patch
@@ -165,7 +165,7 @@ loaders:
   val:
     # paths to the val datasets
     file_paths:
-      - './train_rs.list'
+      - 'conf/fake.list'
 
     # SliceBuilder configuration, i.e. how to iterate over the input volume patch-by-patch
     slice_builder:

@@ -669,7 +669,7 @@ class Transformer:
 
     @staticmethod
     def _transformer_class(class_name):
-        m = importlib.import_module('pytorch3dunet.augment.transforms')
+        m = importlib.import_module('datasets.transforms')
         clazz = getattr(m, class_name)
         return clazz
 
