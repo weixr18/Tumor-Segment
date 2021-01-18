@@ -97,11 +97,12 @@ def process(p):
     allG = np.stack(allG, -1)
     f = h5py.File(os.path.join(output_path, str(
         int(ismvi)) + '_' + p + '.h5'), 'w')
-    f.create_dataset(name='raw', data=np.array(allR, dtype='float32'))
+    f.create_dataset(name='raw', data=np.array(
+        allR, dtype='float32'))  # original image
     f.create_dataset(name='label', data=np.array(
-        allI, dtype='float32'))  # transformed gt
-    f.create_dataset(name='raw-label', data=np.array(allG,
-                                                     dtype='uint8'))  # raw segmentation gt
+        allI, dtype='float32'))  # distance transformed segmentation gt
+    f.create_dataset(name='raw-label', data=np.array(
+        allG, dtype='uint8'))  # raw segmentation gt
     f.close()
     print(p, 'OK!')
 
