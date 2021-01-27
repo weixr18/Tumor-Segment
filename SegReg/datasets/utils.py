@@ -53,6 +53,7 @@ def get_train_loaders(config):
         'train': <train_loader>
         'val': <val_loader>
     }
+
     """
     assert 'loaders' in config, 'Could not find data loaders configuration'
     loaders_config = config['loaders']
