@@ -1,3 +1,4 @@
+# divide dataset script
 import os
 import random
 
