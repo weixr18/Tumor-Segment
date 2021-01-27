@@ -98,7 +98,7 @@ def _create_trainer(config, model, optimizer, lr_scheduler, loss_criterion, eval
     else:
         # start training from scratch
         return RS3DTrainer(model, optimizer, lr_scheduler, loss_criterion, eval_criterion,
-                           config['device'], loaders, trainer_config['checkpoint_dir'],
+                           config['device'], loaders, checkpoint_dir,
                            max_num_epochs=trainer_config['epochs'],
                            max_num_iterations=trainer_config['iters'],
                            validate_after_iters=trainer_config['validate_after_iters'],
