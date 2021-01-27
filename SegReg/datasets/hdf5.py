@@ -10,7 +10,7 @@ from batchgenerators.transforms import spatial_transforms
 
 import datasets.transforms as transforms
 from datasets.utils import ConfigDataset, calculate_stats
-from unet3d.utils import get_logger
+from utils.utils import get_logger
 
 logger = get_logger('HDF5Dataset')
 lock = Lock()
