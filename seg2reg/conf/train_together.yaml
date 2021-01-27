@@ -106,18 +106,6 @@ loaders:
       - './train_rs.list'
       #- '/home/adrian/Datasets/LateralRootPrimordia/t00045_s01_uint8_cropped_gt.h5'
 
-    # SliceBuilder configuration, i.e. how to iterate over the input volume patch-by-patch
-    slice_builder:
-      name: FilterSliceBuilder
-      # train patch size given to the network (adapt to fit in your GPU mem, generally the bigger patch the better)
-      patch_shape: [32, 156, 156]
-      # train stride between patches
-      stride_shape: [10, 20, 20]
-      # minimum volume of the labels in the patch
-      threshold: 0.0001
-      # probability of accepting patches which do not fulfil the threshold criterion
-      slack_acceptance: 0.5
-
     transformer:
       raw:
         # subtract mean and divide by std dev
@@ -166,18 +154,6 @@ loaders:
     # paths to the val datasets
     file_paths:
       - './train_rs.list'
-
-    # SliceBuilder configuration, i.e. how to iterate over the input volume patch-by-patch
-    slice_builder:
-      name: FilterSliceBuilder
-      # train patch size given to the network (adapt to fit in your GPU mem, generally the bigger patch the better)
-      patch_shape: [32, 156, 156]
-      # train stride between patches
-      stride_shape: [20, 100, 100]
-      # minimum volume of the labels in the patch
-      threshold: 0.0001
-      # probability of accepting patches which do not fulfil the threshold criterion
-      slack_acceptance: 1
 
     # data augmentation
     transformer:

@@ -15,6 +15,7 @@ path_prefix = "/Extra/grad/data2019"
 raw_path = path_prefix + '/cyst_seg'
 mvi_data_path = path_prefix + '/MVI'
 notmvi_data_path = path_prefix + '/not MVI'
+IMG_SCALE = 352
 
 output_path = path_prefix + '/h5_3mod_512'
 # output_path2='/mnt/data1/mvi2/nrrd_t1post_3mod_noreg'
@@ -82,12 +83,13 @@ def process(p):
         ######################################distance transform###########################################
         # a=1
         rshape = I.shape
-        rate = [64 / rshape[0], 352 / rshape[1], 352 / rshape[2]]
-        I = snd.zoom(I, rate)[:64, :352, :352]
+        rate = [64 / rshape[0], IMG_SCALE / rshape[1], IMG_SCALE / rshape[2]]
+        I = snd.zoom(I, rate)[:64, :IMG_SCALE, :IMG_SCALE]
 
         moving_resampled_ar = snd.zoom(moving_resampled_ar, rate)[
-            :64, :352, :352]
-        mask_map_ar = snd.zoom(mask_map_ar, rate, order=1)[:64, :352, :352]
+            :64, :IMG_SCALE, :IMG_SCALE]
+        mask_map_ar = snd.zoom(mask_map_ar, rate, order=1)[
+            :64, :IMG_SCALE, :IMG_SCALE]
         # I=I.max()-I
         allI.append(I)
         allG.append(mask_map_ar)

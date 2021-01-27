@@ -8,6 +8,7 @@ from torch.autograd import Variable
 from torch.distributions.normal import Normal
 
 use_gpu = torch.cuda.is_available()
+IMG_SCALE = 352
 
 
 class UNet(nn.Module):
@@ -110,7 +111,7 @@ class UNet(nn.Module):
 
 
 class SpatialTransformation(nn.Module):
-    def __init__(self, size=[64, 128, 128], mode='bilinear'):
+    def __init__(self, size=[64, IMG_SCALE, IMG_SCALE], mode='bilinear'):
         super(SpatialTransformation, self).__init__()
         # Create sampling grid
         vectors = [torch.arange(0, s) for s in size]
@@ -164,7 +165,7 @@ class ShapeMorph3d(nn.Module):
         super(ShapeMorph3d, self).__init__()
         self.unet = UNet(in_channels, forseg=False)
         self.spatial_transform = SpatialTransformation()
-        #if use_gpu:
+        # if use_gpu:
         #    self.unet = self.unet.cuda()
         #    self.spatial_transform = self.spatial_transform.cuda()
         self.num_mods = num_mods
