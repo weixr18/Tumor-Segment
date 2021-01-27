@@ -65,6 +65,14 @@ def _create_trainer(config, model, optimizer, lr_scheduler, loss_criterion, eval
     tensorboard_formatter = get_tensorboard_formatter(
         trainer_config.get('tensorboard_formatter', None))
 
+    # set log dir
+    import time
+    checkpoint_dir = trainer_config['checkpoint_dir'] + \
+        '/' + time.strftime("%Y%m%d%H%M%S", time.localtime())
+    import os
+    if not os.path.exists(checkpoint_dir):
+        os.makedirs(checkpoint_dir)
+
     if resume is not None:
         # continue training from a given checkpoint
         return RS3DTrainer.from_checkpoint(resume, model,
