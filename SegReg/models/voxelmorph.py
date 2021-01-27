@@ -18,15 +18,15 @@ class UNet(nn.Module):
         for i in range(len(enc_nf)):
             prev_nf = in_channels if i == 0 else enc_nf[i - 1]
             self.enc.append(self.conv_block(
-                dim, prev_nf, enc_nf[i], 4, 2, batchnorm=bn))
+                dim, prev_nf, enc_nf[i], 3, 2, batchnorm=bn))
         # Decoder functions
         self.dec = nn.ModuleList()
         self.dec.append(self.conv_block(
-            dim, enc_nf[-1], dec_nf[0], batchnorm=bn))  # 1
+            dim, enc_nf[3], dec_nf[0], batchnorm=bn))  # 1
         self.dec.append(self.conv_block(
-            dim, dec_nf[0] * 2, dec_nf[1], batchnorm=bn))  # 2
+            dim, dec_nf[0] + enc_nf[2], dec_nf[1], batchnorm=bn))  # 2
         self.dec.append(self.conv_block(
-            dim, dec_nf[1] * 2, dec_nf[2], batchnorm=bn))  # 3
+            dim, dec_nf[1] + enc_nf[1], dec_nf[2], batchnorm=bn))  # 3
         self.dec.append(self.conv_block(
             dim, dec_nf[2] + enc_nf[0], dec_nf[3], batchnorm=bn))  # 4
         self.dec.append(self.conv_block(
