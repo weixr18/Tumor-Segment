@@ -1007,18 +1007,37 @@ class RS3DTrainer:
             except:
                 continue
 
+    def _normalize(self, pic):
+        _min = pic.min()
+        _max = pic.max()
+        return (pic - _min) / (_max - _min)
+
     def _log_images(self, input, segs, seg0, reg1, seg1, reg2, seg2, seg3, prefix=''):
-        segs = (segs >= 0.)*1.0
+        """
         seg0 = torch.cat(seg0, 1)
         seg2 = torch.cat(seg2, 1)
         seg1 = torch.cat(seg1, 1)
         seg3 = torch.cat(seg3, 1)
+        reg1 = torch.cat(reg1, 1)
+        reg2 = torch.cat(reg2, 1)
+        segs = (segs >= 0.)*1.0
         seg0 = (seg0 >= 0.) * 1.0
         seg1 = (seg1 >= 0.) * 1.0
         seg2 = (seg2 >= 0.) * 1.0
         seg3 = (seg3 >= 0.) * 1.0
+        """
+        F = torch.nn.functional
+        seg0 = torch.cat(seg0, 1)
+        seg2 = torch.cat(seg2, 1)
+        seg1 = torch.cat(seg1, 1)
+        seg3 = torch.cat(seg3, 1)
         reg1 = torch.cat(reg1, 1)
         reg2 = torch.cat(reg2, 1)
+        segs = F.normalize(segs)
+        seg0 = F.normalize(seg0)
+        seg1 = F.normalize(seg1)
+        seg2 = F.normalize(seg2)
+        seg3 = F.normalize(seg3)
 
         inputs_map = {
             'inputs': input,
@@ -1030,6 +1049,7 @@ class RS3DTrainer:
             'reg_reg_input': reg2,
             'reg_seg2': seg3,
         }
+        # self._log_images(input, target, S0, I1, S1, I2, S2, S3, 'train_')
         img_sources = {}
         for name, batch in inputs_map.items():
             if isinstance(batch, list) or isinstance(batch, tuple):

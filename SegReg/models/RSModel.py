@@ -35,22 +35,33 @@ class RSModel(nn.Module):
 
     def forward(self, I: list, S: list, baseline=False, transformed=False):
         # S=S+1
+
+        import pdb
+        pdb.set_trace()
+        # Segment phase 1
         S0 = self.segmenter(I)
         S01 = torch.cat(S0, 1)
         if not transformed:
             S01 = torch.tanh(S01)
         else:
             S01 = S01.sigmoid()
-        Ls1 = self.seg_loss(S01, S)*10
+        Ls1 = self.seg_loss(S01, S) * 10
         if baseline:
             return Ls1, Ls1, Ls1, Ls1, Ls1, S0, S0, S0, S0, S0, S0
+
+        # Regression phase 1
         I1, S1, DM = self.register(I[:, 1:, ...], S0[1:], I[:, 0, ...], S0[0])
         Lr1 = (self.reg_loss(S1[0], S1[1], I1[0], I1[1], DM[0]) +
                self.reg_loss(S1[0], S1[2], I1[0], I1[2], DM[1]))
         # self.reg_loss(S1[2],S1[1],I1[2],I1[1])
+
+        # Segment phase 2
         S2 = self.segmenter(I1)
-        Ls2 = (torch.stack([self.seg_loss(S2x, (S[:, 0:1, ...]))
-                            for S2x in S2]).sum())*3
+        Ls2 = (torch.stack(
+            [self.seg_loss(S2x, (S[:, 0:1, ...])) for S2x in S2]
+        ).sum()) * 3
+
+        # Regression phase 2
         I2, S3, DM2 = self.register(I1[1:], S2[1:], I1[0].squeeze(1), S2[0])
         Lr2 = (self.reg_loss(S3[0], S3[1], I2[0], I2[1], DM2[0]) +
                self.reg_loss(S3[0], S3[2], I2[0], I2[2], DM2[1]))*0.5
