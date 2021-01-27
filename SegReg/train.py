@@ -20,19 +20,36 @@ from utils.utils import get_number_of_learnable_parameters
 from utils.utils import get_logger, get_tensorboard_formatter
 
 logger = get_logger('Train')
+os.environ['CUDA_VISIBLE_DEVICES'] = '2'
 
 
 def load_config(train):
     parser = argparse.ArgumentParser(description='UNet3D')
     if train:
-        parser.add_argument('--config', type=str, help='Path to the YAML config file', required=False,
+        parser.add_argument('--config',
+                            type=str,
+                            help='Path to the YAML config file',
+                            required=False,
                             default='conf/train_together.yaml')
+        parser.add_argument('--debug',
+                            type=bool,
+                            help='Use fake data list while debug',
+                            required=False,
+                            default='false')
     else:
-        parser.add_argument('--config', type=str, help='Path to the YAML config file', required=False,
-                            default='../resources/3DUnet_lightsheet_nuclei/test_config.yaml')
+        parser.add_argument(
+            '--config',
+            type=str,
+            help='Path to the YAML config file',
+            required=False,
+            default='../resources/3DUnet_lightsheet_nuclei/test_config.yaml')
 
     args = parser.parse_args()
     config = _load_config_yaml(args.config)
+    if (args.debug):
+        config['loaders']['train']['file_paths'] = ['conf/fake.list']
+        config['loaders']['val']['file_paths'] = ['conf/fake.list']
+
     # Get a device to train on
     device_str = config.get('device', None)
     if device_str is not None:
@@ -53,7 +70,8 @@ def _load_config_yaml(config_file):
     return yaml.safe_load(open(config_file, 'r'))
 
 
-def _create_trainer(config, model, optimizer, lr_scheduler, loss_criterion, eval_criterion, loaders):
+def _create_trainer(config, model, optimizer, lr_scheduler, loss_criterion,
+                    eval_criterion, loaders):
     assert 'trainer' in config, 'Could not find trainer configuration'
     trainer_config = config['trainer']
 
@@ -75,39 +93,60 @@ def _create_trainer(config, model, optimizer, lr_scheduler, loss_criterion, eval
 
     if resume is not None:
         # continue training from a given checkpoint
-        return RS3DTrainer.from_checkpoint(resume, model,
-                                           optimizer, lr_scheduler, loss_criterion,
-                                           eval_criterion, loaders, tensorboard_formatter=tensorboard_formatter,
-                                           epoches=trainer_config['epochs'],
-                                           multi_head=trainer_config['baseline_model'],
-                                           dist_t=trainer_config['transformed'])
+        return RS3DTrainer.from_checkpoint(
+            resume,
+            model,
+            optimizer,
+            lr_scheduler,
+            loss_criterion,
+            eval_criterion,
+            loaders,
+            tensorboard_formatter=tensorboard_formatter,
+            epoches=trainer_config['epochs'],
+            multi_head=trainer_config['baseline_model'],
+            dist_t=trainer_config['transformed'])
     elif pre_trained is not None:
         # fine-tune a given pre-trained model
-        return RS3DTrainer.from_pretrained(pre_trained, model, optimizer, lr_scheduler, loss_criterion,
-                                           eval_criterion, device=config['device'], loaders=loaders,
-                                           max_num_epochs=trainer_config['epochs'],
-                                           max_num_iterations=trainer_config['iters'],
-                                           validate_after_iters=trainer_config['validate_after_iters'],
-                                           log_after_iters=trainer_config['log_after_iters'],
-                                           eval_score_higher_is_better=trainer_config[
-                                               'eval_score_higher_is_better'],
-                                           tensorboard_formatter=tensorboard_formatter,
-                                           skip_train_validation=skip_train_validation,
-                                           multi_head=trainer_config['baseline_model'],
-                                           dist_t=trainer_config['transformed'])
+        return RS3DTrainer.from_pretrained(
+            pre_trained,
+            model,
+            optimizer,
+            lr_scheduler,
+            loss_criterion,
+            eval_criterion,
+            device=config['device'],
+            loaders=loaders,
+            max_num_epochs=trainer_config['epochs'],
+            max_num_iterations=trainer_config['iters'],
+            validate_after_iters=trainer_config['validate_after_iters'],
+            log_after_iters=trainer_config['log_after_iters'],
+            eval_score_higher_is_better=trainer_config[
+                'eval_score_higher_is_better'],
+            tensorboard_formatter=tensorboard_formatter,
+            skip_train_validation=skip_train_validation,
+            multi_head=trainer_config['baseline_model'],
+            dist_t=trainer_config['transformed'])
     else:
         # start training from scratch
-        return RS3DTrainer(model, optimizer, lr_scheduler, loss_criterion, eval_criterion,
-                           config['device'], loaders, checkpoint_dir,
-                           max_num_epochs=trainer_config['epochs'],
-                           max_num_iterations=trainer_config['iters'],
-                           validate_after_iters=trainer_config['validate_after_iters'],
-                           log_after_iters=trainer_config['log_after_iters'],
-                           eval_score_higher_is_better=trainer_config['eval_score_higher_is_better'],
-                           tensorboard_formatter=tensorboard_formatter,
-                           skip_train_validation=skip_train_validation,
-                           multi_head=trainer_config['baseline_model'],
-                           dist_t=trainer_config['transformed'])
+        return RS3DTrainer(
+            model,
+            optimizer,
+            lr_scheduler,
+            loss_criterion,
+            eval_criterion,
+            config['device'],
+            loaders,
+            checkpoint_dir,
+            max_num_epochs=trainer_config['epochs'],
+            max_num_iterations=trainer_config['iters'],
+            validate_after_iters=trainer_config['validate_after_iters'],
+            log_after_iters=trainer_config['log_after_iters'],
+            eval_score_higher_is_better=trainer_config[
+                'eval_score_higher_is_better'],
+            tensorboard_formatter=tensorboard_formatter,
+            skip_train_validation=skip_train_validation,
+            multi_head=trainer_config['baseline_model'],
+            dist_t=trainer_config['transformed'])
 
 
 def _create_optimizer(config, model):
@@ -115,8 +154,9 @@ def _create_optimizer(config, model):
     optimizer_config = config['optimizer']
     learning_rate = optimizer_config['learning_rate']
     weight_decay = optimizer_config['weight_decay']
-    optimizer = optim.Adam(
-        model.parameters(), lr=learning_rate, weight_decay=weight_decay)
+    optimizer = optim.Adam(model.parameters(),
+                           lr=learning_rate,
+                           weight_decay=weight_decay)
     return optimizer
 
 
@@ -124,7 +164,11 @@ def _create_lr_scheduler(config, optimizer):
     lr_config = config.get('lr_scheduler', None)
     if lr_config is None:
         # use ReduceLROnPlateau as a default scheduler
-        return ReduceLROnPlateau(optimizer, mode='max', factor=0.5, patience=20, verbose=True)
+        return ReduceLROnPlateau(optimizer,
+                                 mode='max',
+                                 factor=0.5,
+                                 patience=20,
+                                 verbose=True)
     else:
         class_name = lr_config.pop('name')
         m = importlib.import_module('torch.optim.lr_scheduler')
@@ -166,7 +210,8 @@ def main():
 
     # Log the number of learnable parameters
     logger.info(
-        f'Number of learnable params {get_number_of_learnable_parameters(model)}')
+        f'Number of learnable params {get_number_of_learnable_parameters(model)}'
+    )
 
     # Create loss criterion
     #loss_criterion = get_loss_criterion(config)
@@ -183,8 +228,13 @@ def main():
     lr_scheduler = _create_lr_scheduler(config, optimizer)
 
     # Create model trainer
-    trainer = _create_trainer(config, model=model, optimizer=optimizer, lr_scheduler=lr_scheduler,
-                              loss_criterion=None, eval_criterion=eval_criterion, loaders=loaders)
+    trainer = _create_trainer(config,
+                              model=model,
+                              optimizer=optimizer,
+                              lr_scheduler=lr_scheduler,
+                              loss_criterion=None,
+                              eval_criterion=eval_criterion,
+                              loaders=loaders)
     # Start training
     trainer.fit()
 

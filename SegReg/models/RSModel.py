@@ -7,7 +7,7 @@ from .voxelmorph import UNet, ShapeMorph3d
 class Segmenter(nn.Module):
     def __init__(self, modality=3, num_of_cls=1):
         super(Segmenter, self).__init__()
-        self.nets = UNet(modality, modality*num_of_cls, forseg=True)
+        self.nets = UNet(modality, modality * num_of_cls, forseg=True)
         self.modality = modality
         self.num_of_cls = num_of_cls
 
@@ -17,8 +17,9 @@ class Segmenter(nn.Module):
         pred = self.nets(x)
         Slist = []
         for i in range(self.modality):
-            Slist.append(pred[:, i*self.num_of_cls:(i+1)
-                              * self.num_of_cls, :, :, :])
+            Slist.append(pred[:, i * self.num_of_cls:(i + 1) *
+                              self.num_of_cls, :, :, :])
+        Slist = torch.cat(Slist, 1)
         return Slist
 
 
@@ -36,8 +37,6 @@ class RSModel(nn.Module):
     def forward(self, I: list, S: list, baseline=False, transformed=False):
         # S=S+1
 
-        import pdb
-        pdb.set_trace()
         # Segment phase 1
         S0 = self.segmenter(I)
         S01 = torch.cat(S0, 1)
@@ -58,14 +57,15 @@ class RSModel(nn.Module):
         # Segment phase 2
         S2 = self.segmenter(I1)
         Ls2 = (torch.stack(
-            [self.seg_loss(S2x, (S[:, 0:1, ...])) for S2x in S2]
-        ).sum()) * 3
+            [self.seg_loss(S2x, (S[:, 0:1, ...])) for S2x in S2]).sum()) * 3
 
         # Regression phase 2
         I2, S3, DM2 = self.register(I1[1:], S2[1:], I1[0].squeeze(1), S2[0])
         Lr2 = (self.reg_loss(S3[0], S3[1], I2[0], I2[1], DM2[0]) +
-               self.reg_loss(S3[0], S3[2], I2[0], I2[2], DM2[1]))*0.5
+               self.reg_loss(S3[0], S3[2], I2[0], I2[2], DM2[1])) * 0.5
         # self.reg_loss(S3[2],S3[1],I2[2],I2[1])
-        Li = (self.imp_loss(Lr1-Lr2, torch.ones_like(Lr1-Lr2).cuda()) +
-              self.imp_loss(Ls1-Ls2, torch.ones_like(Ls1-Ls2).cuda()))*0.2
+        Li = (self.imp_loss(Lr1 - Lr2,
+                            torch.ones_like(Lr1 - Lr2).cuda()) +
+              self.imp_loss(Ls1 - Ls2,
+                            torch.ones_like(Ls1 - Ls2).cuda())) * 0.2
         return Ls1, Ls2, Lr1, Lr2, Li, S0, I1, S1, I2, S2, S3

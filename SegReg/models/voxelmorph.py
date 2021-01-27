@@ -179,4 +179,7 @@ class ShapeMorph3d(nn.Module):
                 moving_seg[i], deformation_matrix)
             R_S.append(registered_segs)
             DM.append(deformation_matrix)
+        R_I = torch.cat(R_I, 1)
+        R_S = torch.cat(R_S, 1)
+        DM = torch.cat(DM, 1)
         return R_I, R_S, DM
