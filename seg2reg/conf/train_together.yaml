@@ -30,7 +30,7 @@ model:
 
 # trainer configuration
 trainer:
-  baseline_model: true
+  baseline_model: false
   transformed: true
   # path to the checkpoint directory
   checkpoint_dir: "/Extra/grad/data2019/bs_going" #single
@@ -90,9 +90,9 @@ loaders:
   # when reading from multiple threads.
   dataset: RSModelHDF5Dataset
   # batch dimension; if number of GPUs is N > 1, then a batch_size of N * batch_size will automatically be taken for DataParallel
-  batch_size: 8
+  batch_size: 4
   # how many subprocesses to use for data loading
-  num_workers: 8
+  num_workers: 4
   # path to the raw data within the H5
   raw_internal_path: raw #raw-label
   # path to the the label data within the H5
@@ -103,7 +103,7 @@ loaders:
   train:
     # paths to the training datasets
     file_paths:
-      - 'conf/fake.list'
+      - './train_rs.list'
       #- '/home/adrian/Datasets/LateralRootPrimordia/t00045_s01_uint8_cropped_gt.h5'
 
     # SliceBuilder configuration, i.e. how to iterate over the input volume patch-by-patch
@@ -165,7 +165,7 @@ loaders:
   val:
     # paths to the val datasets
     file_paths:
-      - 'conf/fake.list'
+      - './train_rs.list'
 
     # SliceBuilder configuration, i.e. how to iterate over the input volume patch-by-patch
     slice_builder:
