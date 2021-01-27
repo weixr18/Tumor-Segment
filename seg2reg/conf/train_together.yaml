@@ -18,7 +18,7 @@ model:
   # determines the order of operators in a single layer (gcr - GroupNorm+Conv3d+ReLU)
   layer_order: gcr
   # number of features at each level of the U-Net
-  f_maps: [32, 64, 64, 128]
+  f_maps: [16, 32, 32, 64] #[32, 64, 64, 128]
   # number of groups in the groupnorm
   num_groups: 16
   # apply element-wise nn.Sigmoid after the final 1x1 convolution, otherwise apply nn.Softmax
