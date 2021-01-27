@@ -4,6 +4,9 @@ import torch.nn.functional as F
 from torch.distributions.normal import Normal
 
 
+IMG_SCALE = 352
+
+
 class UNet(nn.Module):
     def __init__(self, in_channels=4, out_channel=2, dim=3, enc_nf=[16, 32, 32, 32], dec_nf=[32, 32, 32, 32, 8, 8],
                  bn=None, full_size=True, forseg=False):
@@ -104,7 +107,7 @@ class UNet(nn.Module):
 
 
 class SpatialTransformation(nn.Module):
-    def __init__(self, size=[64, 128, 128], mode='bilinear'):
+    def __init__(self, size=[64, IMG_SCALE, IMG_SCALE], mode='bilinear'):
         super(SpatialTransformation, self).__init__()
         # Create sampling grid
         vectors = [torch.arange(0, s) for s in size]
