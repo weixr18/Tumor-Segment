@@ -578,6 +578,7 @@ class RSModelHDF5Dataset(ConfigDataset):
                 logger.info(f'Loading {phase} set from: {file_path}...')
                 dataset = cls(file_path=file_path,
                               phase=phase,
+                              slice_builder_config=None,
                               transformer_config=transformer_config,
                               mirror_padding=dataset_config.get(
                                   'mirror_padding', None),
