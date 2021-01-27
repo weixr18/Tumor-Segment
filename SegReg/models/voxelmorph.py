@@ -8,7 +8,7 @@ IMG_SCALE = 352
 
 
 class UNet(nn.Module):
-    def __init__(self, in_channels=4, out_channel=2, dim=3, enc_nf=[16, 32, 32, 32], dec_nf=[32, 32, 32, 32, 8, 8],
+    def __init__(self, in_channels=4, out_channel=2, dim=3, enc_nf=[8, 16, 16, 32], dec_nf=[32, 32, 16, 16, 8, 8],
                  bn=None, full_size=True, forseg=False):
         super(UNet, self).__init__()
         self.bn = bn
