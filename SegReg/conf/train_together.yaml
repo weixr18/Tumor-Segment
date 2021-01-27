@@ -103,10 +103,9 @@ loaders:
   train:
     # paths to the training datasets
     file_paths:
-      - 'conf/fake.list'
+      - './fake.list'
       #- './train_rs.list'
       #- '/home/adrian/Datasets/LateralRootPrimordia/t00045_s01_uint8_cropped_gt.h5'
-
     transformer:
       raw:
         # subtract mean and divide by std dev
@@ -154,7 +153,7 @@ loaders:
   val:
     # paths to the val datasets
     file_paths:
-      - 'conf/fake.list'
+      - './fake.list'
       #- './train_rs.list'
 
     # data augmentation

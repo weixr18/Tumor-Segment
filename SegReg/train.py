@@ -12,12 +12,12 @@ import torch.nn as nn
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 
 from datasets.utils import get_train_loaders
-from voxelmorph.losses import vox_morph_loss
-from voxelmorph.vmmodel import RSModel
-from unet3d.trainer import RS3DTrainer
-from unet3d.metrics import get_evaluation_metric
-from unet3d.utils import get_number_of_learnable_parameters
-from unet3d.utils import get_logger, get_tensorboard_formatter
+from utils.losses import vox_morph_loss
+from models.RSModel import RSModel
+from trainers.trainer import RS3DTrainer
+from utils.metrics import get_evaluation_metric
+from utils.utils import get_number_of_learnable_parameters
+from utils.utils import get_logger, get_tensorboard_formatter
 
 logger = get_logger('Train')
 
