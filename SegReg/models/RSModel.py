@@ -1,3 +1,4 @@
+import torch
 import torch.nn as nn
 
 from .voxelmorph import UNet, ShapeMorph3d
