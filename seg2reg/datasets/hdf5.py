@@ -9,7 +9,7 @@ from batchgenerators.transforms import noise_transforms
 from batchgenerators.transforms import spatial_transforms
 
 import datasets.transforms as transforms
-from datasets.utils import get_slice_builder, ConfigDataset, calculate_stats
+from datasets.utils import ConfigDataset, calculate_stats
 from unet3d.utils import get_logger
 
 logger = get_logger('HDF5Dataset')
@@ -24,7 +24,7 @@ class AbstractHDF5Dataset(ConfigDataset):
 
     def __init__(self, file_path,
                  phase,
-                 slice_builder_config,
+                 # slice_builder_config,
                  transformer_config,
                  mirror_padding=(16, 32, 32),
                  raw_internal_path='raw',
@@ -99,8 +99,8 @@ class AbstractHDF5Dataset(ConfigDataset):
                 self.weight_maps = None
 
             self._check_dimensionality(self.raws, self.labels)
-            slice_builder = get_slice_builder(
-                self.raws, self.labels, self.weight_maps, slice_builder_config)
+            # slice_builder = get_slice_builder(
+            #    self.raws, self.labels, self.weight_maps, slice_builder_config)
         else:
             # 'test' phase used only for predictions so ignore the label dataset
             self.labels = self.fetch_and_check(input_file, label_internal_path)
@@ -125,8 +125,8 @@ class AbstractHDF5Dataset(ConfigDataset):
                     padded_volumes.append(padded_volume)
 
                 self.raws = padded_volumes
-            slice_builder = get_slice_builder(
-                self.raws, None, self.weight_maps, slice_builder_config)
+            # slice_builder = get_slice_builder(
+            #    self.raws, None, self.weight_maps, slice_builder_config)
         # build slice indices for raw and label data sets
         #slice_builder = get_slice_builder(self.raws, self.labels, self.weight_maps, slice_builder_config)
         self.raw_slices = slice_builder.raw_slices
@@ -632,8 +632,6 @@ class RSModelHDF5Dataset(ConfigDataset):
 
         # load data augmentation configuration
         transformer_config = phase_config['transformer']
-        # load slice builder config
-        slice_builder_config = phase_config['slice_builder']
         # load files to process
         file_paths = phase_config['file_paths']
         # file_paths may contain both files and directories; if the file_path is a directory all H5 files inside
@@ -646,7 +644,6 @@ class RSModelHDF5Dataset(ConfigDataset):
                 logger.info(f'Loading {phase} set from: {file_path}...')
                 dataset = cls(file_path=file_path,
                               phase=phase,
-                              slice_builder_config=slice_builder_config,
                               transformer_config=transformer_config,
                               mirror_padding=dataset_config.get(
                                   'mirror_padding', None),
