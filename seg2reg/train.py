@@ -19,7 +19,7 @@ from unet3d.metrics import get_evaluation_metric
 from unet3d.utils import get_number_of_learnable_parameters
 from unet3d.utils import get_logger, get_tensorboard_formatter
 
-logger = get_logger('UNet3DTrain')
+logger = get_logger('Train')
 
 
 def load_config(train):
@@ -173,9 +173,6 @@ def main():
 
     # Create learning rate adjustment strategy
     lr_scheduler = _create_lr_scheduler(config, optimizer)
-
-    #import pdb
-    # pdb.set_trace()
 
     # Create model trainer
     trainer = _create_trainer(config, model=model, optimizer=optimizer, lr_scheduler=lr_scheduler,
