@@ -1014,12 +1014,6 @@ class RS3DTrainer:
 
     def _log_images(self, input, segs, seg0, reg1, seg1, reg2, seg2, seg3, prefix=''):
         """
-        seg0 = torch.cat(seg0, 1)
-        seg2 = torch.cat(seg2, 1)
-        seg1 = torch.cat(seg1, 1)
-        seg3 = torch.cat(seg3, 1)
-        reg1 = torch.cat(reg1, 1)
-        reg2 = torch.cat(reg2, 1)
         segs = (segs >= 0.)*1.0
         seg0 = (seg0 >= 0.) * 1.0
         seg1 = (seg1 >= 0.) * 1.0
@@ -1027,12 +1021,6 @@ class RS3DTrainer:
         seg3 = (seg3 >= 0.) * 1.0
         """
         F = torch.nn.functional
-        seg0 = torch.cat(seg0, 1)
-        seg2 = torch.cat(seg2, 1)
-        seg1 = torch.cat(seg1, 1)
-        seg3 = torch.cat(seg3, 1)
-        reg1 = torch.cat(reg1, 1)
-        reg2 = torch.cat(reg2, 1)
         segs = F.normalize(segs)
         seg0 = F.normalize(seg0)
         seg1 = F.normalize(seg1)

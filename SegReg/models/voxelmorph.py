@@ -165,18 +165,18 @@ class ShapeMorph3d(nn.Module):
             moving_image = torch.cat(moving_image, 1)
         # if isinstance(moving_seg,list):
         #    moving_seg=torch.stack(moving_seg,1)
-        R_I = [fixed_image.unsqueeze(1)]
+        R_I = [fixed_image]
         R_S = [fixed_seg]
         DM = []
         for i in range(self.num_mods-1):
-            x = torch.cat([moving_image[:, i:i+1, ...], moving_seg[i],
-                           fixed_image.unsqueeze(1), fixed_seg], dim=1)
+            x = torch.cat([moving_image[:, i:i+1, ...], moving_seg[:, i:i+1, ...],
+                           fixed_image, fixed_seg], dim=1)
             deformation_matrix = self.unet(x)
             registered_image = self.spatial_transform(
                 moving_image[:, i:i+1, ...], deformation_matrix)
             R_I.append(registered_image)
             registered_segs = self.spatial_transform(
-                moving_seg[i], deformation_matrix)
+                moving_seg[:, i:i+1, ...], deformation_matrix)
             R_S.append(registered_segs)
             DM.append(deformation_matrix)
         R_I = torch.cat(R_I, 1)

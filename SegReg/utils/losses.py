@@ -663,10 +663,9 @@ def NJ_loss(fild):
     return torch.sum(Neg_Jac)
 
 
-def vox_morph_loss(x, xnew, y, ytrue, filed, lamda=0.01, usex=True):
-    cc = ncc_loss(y, ytrue)*0.1+torch.nn.functional.smooth_l1_loss(y, ytrue)*10
-
-    sm = gradient_loss(filed)+NJ_loss(filed)
+def vox_morph_loss(x, xnew, y, ytrue, field, lamda=0.01, usex=True):
+    cc = ncc_loss(y, ytrue) * 0.1 + F.smooth_l1_loss(y, ytrue) * 10
+    sm = gradient_loss(field) + NJ_loss(field)
     loss = cc + lamda * sm
     if usex:
         cc2 = ncc_loss(x, xnew)
