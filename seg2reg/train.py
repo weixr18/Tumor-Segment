@@ -12,16 +12,12 @@ import torch.nn as nn
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 
 from datasets.utils import get_train_loaders
-
-import voxelmorph.reg_item as ri
-import voxelmorph.vmmodel as vm
+from voxelmorph.losses import vox_morph_loss
+from voxelmorph.vmmodel import RSModel
 from unet3d.trainer import RS3DTrainer
 from unet3d.metrics import get_evaluation_metric
 from unet3d.utils import get_number_of_learnable_parameters
 from unet3d.utils import get_logger, get_tensorboard_formatter
-
-#os.environ['CUDA_VISIBLE_DEVICES'] = '0, 1, 2'
-
 
 logger = get_logger('UNet3DTrain')
 
@@ -149,9 +145,9 @@ def main():
     else:
         segloss = BCEDiceLoss(0.5, 0.5)
         config['loaders']['label_internal_path'] = 'raw-label'
-    regloss = ri.vox_morph_loss
+    regloss = vox_morph_loss
     imp_loss = nn.SoftMarginLoss()
-    model = vm.RSModel(segloss, regloss, imp_loss)
+    model = RSModel(segloss, regloss, imp_loss)
     # use DataParallel if more than 1 GPU available
     device = config['device']
     if torch.cuda.device_count() > 1:
@@ -179,8 +175,8 @@ def main():
     lr_scheduler = _create_lr_scheduler(config, optimizer)
 
     #import pdb
-    #pdb.set_trace()
-    
+    # pdb.set_trace()
+
     # Create model trainer
     trainer = _create_trainer(config, model=model, optimizer=optimizer, lr_scheduler=lr_scheduler,
                               loss_criterion=None, eval_criterion=eval_criterion, loaders=loaders)

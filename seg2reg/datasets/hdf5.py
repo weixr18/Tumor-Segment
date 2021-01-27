@@ -24,7 +24,6 @@ class AbstractHDF5Dataset(ConfigDataset):
 
     def __init__(self, file_path,
                  phase,
-                 # slice_builder_config,
                  transformer_config,
                  mirror_padding=(16, 32, 32),
                  raw_internal_path='raw',
@@ -34,7 +33,6 @@ class AbstractHDF5Dataset(ConfigDataset):
         :param file_path: path to H5 file containing raw data as well as labels and per pixel weights (optional)
         :param phase: 'train' for training, 'val' for validation, 'test' for testing; data augmentation is performed
             only during the 'train' phase
-        :para'/home/adrian/workspace/ilastik-datasets/VolkerDeconv/train'm slice_builder_config: configuration of the SliceBuilder
         :param transformer_config: data augmentation configuration
         :param mirror_padding (int or tuple): number of voxels padded to each axis
         :param raw_internal_path (str or list): H5 internal path to the raw dataset
@@ -99,8 +97,6 @@ class AbstractHDF5Dataset(ConfigDataset):
                 self.weight_maps = None
 
             self._check_dimensionality(self.raws, self.labels)
-            # slice_builder = get_slice_builder(
-            #    self.raws, self.labels, self.weight_maps, slice_builder_config)
         else:
             # 'test' phase used only for predictions so ignore the label dataset
             self.labels = self.fetch_and_check(input_file, label_internal_path)
@@ -125,16 +121,8 @@ class AbstractHDF5Dataset(ConfigDataset):
                     padded_volumes.append(padded_volume)
 
                 self.raws = padded_volumes
-            # slice_builder = get_slice_builder(
-            #    self.raws, None, self.weight_maps, slice_builder_config)
-        # build slice indices for raw and label data sets
-        #slice_builder = get_slice_builder(self.raws, self.labels, self.weight_maps, slice_builder_config)
-        self.raw_slices = slice_builder.raw_slices
-        self.label_slices = slice_builder.label_slices
-        self.weight_slices = slice_builder.weight_slices
-        self.cls = [self.cls]*len(self.raw_slices)
-        self.patch_count = len(self.raw_slices)
-        logger.info(f'Number of patches: {self.patch_count}')
+
+        self.cls = [self.cls]*len(self.raws)
 
     def ds_stats(self):
         # calculate global min, max, mean and std for normalization
@@ -163,25 +151,22 @@ class AbstractHDF5Dataset(ConfigDataset):
             raise StopIteration
 
         # get the slice for a given index 'idx'
-        raw_idx = self.raw_slices[idx]
-        # get the raw data patch for a given slice
-        #raw_patch_transformed = self._transform_patches(self.raws, raw_idx, self.raw_transform)
+        raw_idx = self.raws[idx]
 
         if self.phase == 'test':
+            # do not give labels
             # discard the channel dimension in the slices: predictor requires only the spatial dimensions of the volume
-            raw_patch_transformed, _ = self.do_augmentation(
-                self.raws[0][raw_idx])
+            raw_transformed, _ = self.do_augmentation(self.raws[0][raw_idx])
             if len(raw_idx) == 4:
                 raw_idx = raw_idx[1:]
-            return raw_patch_transformed, raw_idx
+            return raw_transformed, raw_idx
         else:
-            # get the slice for a given index 'idx'
-            label_idx = self.label_slices[idx]
-            raw_patch_transformed, label_patch_transformed = self.do_augmentation(
+            # give both labels and images
+            label_idx = self.labels[idx]
+            raw_transformed, label_transformed = self.do_augmentation(
                 self.raws[0][raw_idx], self.labels[0][label_idx])
-            #label_patch_transformed = self._transform_patches(self.labels, label_idx, self.label_transform)
 
-            return raw_patch_transformed, label_patch_transformed, self.cls[idx]
+            return raw_transformed, label_transformed, self.cls[idx]
 
     def do_augmentation(self, array, label=None):
         """Augmentation for the training data.
@@ -208,22 +193,6 @@ class AbstractHDF5Dataset(ConfigDataset):
             # start = time.time()
             augmented, label = spatial_transforms.augment_resize(
                 array, label, [40, 144, 144])
-        # end = time.time()
-        # print('resize',end-start)
-        # augmented = noise_transforms.augment_gaussian_noise(
-        #    array, noise_variance=(0, .05))
-        # augmented = noise_transforms.augment_gaussian_blur(
-        #    augmented, sigma_range=(1.2, 1.5))
-
-        # start = time.time()
-        # print('noise',start-end)
-        # augmented = spatial_transforms.augment_mirroring(augmented,)[0]
-        # end = time.time()
-        # print('miror',end-start)
-        # augmented=spatial_transforms.augment_rot90(augmented,None,axes=(1,2))[0]
-        # start = time.time()
-        # print('rot90',start-end)
-        # need to become [bs, c, x, y, z] before augment_spatial
         else:
             augmented = array
         augmented = augmented[None, ...]
@@ -252,20 +221,6 @@ class AbstractHDF5Dataset(ConfigDataset):
         else:
             return augmented[0, :, :, :], label
 
-    @staticmethod
-    def _transform_patches(datasets, label_idx, transformer):
-        transformed_patches = []
-        for dataset in datasets:
-            # get the label data and apply the label transformer
-            transformed_patch = transformer(dataset[label_idx])
-            transformed_patches.append(transformed_patch)
-
-        # if transformed_patches is a singleton list return the first element only
-        if len(transformed_patches) == 1:
-            return transformed_patches[0]
-        else:
-            return transformed_patches
-
     def __len__(self):
         return self.patch_count
 
@@ -291,7 +246,7 @@ class AbstractHDF5Dataset(ConfigDataset):
         # load data augmentation configuration
         transformer_config = phase_config['transformer']
         # load slice builder config
-        slice_builder_config = phase_config['slice_builder']
+        #slice_builder_config = phase_config['slice_builder']
         # load files to process
         file_paths = phase_config['file_paths']
         # file_paths may contain both files and directories; if the file_path is a directory all H5 files inside
@@ -304,7 +259,7 @@ class AbstractHDF5Dataset(ConfigDataset):
                 logger.info(f'Loading {phase} set from: {file_path}...')
                 dataset = cls(file_path=file_path,
                               phase=phase,
-                              slice_builder_config=slice_builder_config,
+                              # slice_builder_config=slice_builder_config,
                               transformer_config=transformer_config,
                               mirror_padding=dataset_config.get(
                                   'mirror_padding', None),
@@ -345,7 +300,7 @@ class StandardHDF5Dataset(AbstractHDF5Dataset):
                  raw_internal_path='raw', label_internal_path='label', weight_internal_path=None):
         super().__init__(file_path=file_path,
                          phase=phase,
-                         slice_builder_config=slice_builder_config,
+                         # slice_builder_config=slice_builder_config,
                          transformer_config=transformer_config,
                          mirror_padding=mirror_padding,
                          raw_internal_path=raw_internal_path,
@@ -385,7 +340,7 @@ class LazyHDF5Dataset(AbstractHDF5Dataset):
                  raw_internal_path='raw', label_internal_path='label', weight_internal_path=None):
         super().__init__(file_path=file_path,
                          phase=phase,
-                         slice_builder_config=slice_builder_config,
+                         # slice_builder_config=slice_builder_config,
                          transformer_config=transformer_config,
                          mirror_padding=mirror_padding,
                          raw_internal_path=raw_internal_path,
@@ -526,18 +481,11 @@ class RSModelHDF5Dataset(ConfigDataset):
             raise StopIteration
         # get the slice for a given index 'idx'
         raws = self.raws[idx]
-        # get the raw data patch for a given slice
-        #raw_patch_transformed = self._transform_patches(self.raws, raw_idx, self.raw_transform)
 
         if self.phase == 'test':
-            # discard the channel dimension in the slices: predictor requires only the spatial dimensions of the volume
-            #raw_patch_transformed, _ = self.do_augmentation(raws)
             return raws
         else:
-            # get the slice for a given index 'idx'
             gt = self.labels[idx]
-            #raw_patch_transformed, label_patch_transformed=self.do_augmentation(raws,gt)
-            #label_patch_transformed = self._transform_patches(self.labels, label_idx, self.label_transform)
             return raws, gt, self.cls[idx]
 
     def do_augmentation(self, array, label=None):
@@ -593,20 +541,6 @@ class RSModelHDF5Dataset(ConfigDataset):
                 return augmented[0, :, :, :], label[0, :, :, :]
         else:
             return augmented[0, :, :, :], label
-
-    @staticmethod
-    def _transform_patches(datasets, label_idx, transformer):
-        transformed_patches = []
-        for dataset in datasets:
-            # get the label data and apply the label transformer
-            transformed_patch = transformer(dataset[label_idx])
-            transformed_patches.append(transformed_patch)
-
-        # if transformed_patches is a singleton list return the first element only
-        if len(transformed_patches) == 1:
-            return transformed_patches[0]
-        else:
-            return transformed_patches
 
     def __len__(self):
         return self.count

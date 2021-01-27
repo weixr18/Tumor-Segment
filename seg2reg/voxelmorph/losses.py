@@ -32,9 +32,7 @@ def DSC(pred, target):
 
 
 def ncc_loss(I, J, win=None):
-    '''
-    ÊäÈë´óÐ¡ÊÇ[B,C,D,W,H]¸ñÊ½µÄ£¬ÔÚ¼ÆËãnccÊ±ÓÃ¾í»ýÀ´ÊµÏÖÖ¸¶¨´°¿ÚÄÚÇóºÍ
-    '''
+
     ndims = len(list(I.size())) - 2
     assert ndims in [
         1, 2, 3], "volumes should be 1 to 3 dimensions. found: %d" % ndims

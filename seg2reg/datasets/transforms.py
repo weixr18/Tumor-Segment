@@ -27,7 +27,8 @@ class RandomFlip:
         self.axis_prob = axis_prob
 
     def __call__(self, m):
-        assert m.ndim in [3, 4], 'Supports only 3D (DxHxW) or 4D (CxDxHxW) images'
+        assert m.ndim in [
+            3, 4], 'Supports only 3D (DxHxW) or 4D (CxDxHxW) images'
 
         for axis in self.axes:
             if self.random_state.uniform() > self.axis_prob:
@@ -56,7 +57,8 @@ class RandomRotate90:
         self.axis = (1, 2)
 
     def __call__(self, m):
-        assert m.ndim in [3, 4], 'Supports only 3D (DxHxW) or 4D (CxDxHxW) images'
+        assert m.ndim in [
+            3, 4], 'Supports only 3D (DxHxW) or 4D (CxDxHxW) images'
 
         # pick number of rotations at random
         k = self.random_state.randint(0, 4)
@@ -64,7 +66,8 @@ class RandomRotate90:
         if m.ndim == 3:
             m = np.rot90(m, k, self.axis)
         else:
-            channels = [np.rot90(m[c], k, self.axis) for c in range(m.shape[0])]
+            channels = [np.rot90(m[c], k, self.axis)
+                        for c in range(m.shape[0])]
             m = np.stack(channels, axis=0)
 
         return m
@@ -90,10 +93,12 @@ class RandomRotate:
 
     def __call__(self, m):
         axis = self.axes[self.random_state.randint(len(self.axes))]
-        angle = self.random_state.randint(-self.angle_spectrum, self.angle_spectrum)
+        angle = self.random_state.randint(-self.angle_spectrum,
+                                          self.angle_spectrum)
 
         if m.ndim == 3:
-            m = rotate(m, angle, axes=axis, reshape=False, order=self.order, mode=self.mode, cval=-1)
+            m = rotate(m, angle, axes=axis, reshape=False,
+                       order=self.order, mode=self.mode, cval=-1)
         else:
             channels = [rotate(m[c], angle, axes=axis, reshape=False, order=self.order, mode=self.mode, cval=-1) for c
                         in range(m.shape[0])]
@@ -157,7 +162,8 @@ class ElasticDeformation:
                 volume_shape = m[0].shape
 
             if self.apply_3d:
-                dz = gaussian_filter(self.random_state.randn(*volume_shape), self.sigma, mode="reflect") * self.alpha
+                dz = gaussian_filter(self.random_state.randn(
+                    *volume_shape), self.sigma, mode="reflect") * self.alpha
             else:
                 dz = np.zeros_like(m)
 
@@ -169,13 +175,15 @@ class ElasticDeformation:
             ]
 
             z_dim, y_dim, x_dim = volume_shape
-            z, y, x = np.meshgrid(np.arange(z_dim), np.arange(y_dim), np.arange(x_dim), indexing='ij')
+            z, y, x = np.meshgrid(np.arange(z_dim), np.arange(
+                y_dim), np.arange(x_dim), indexing='ij')
             indices = z + dz, y + dy, x + dx
 
             if m.ndim == 3:
                 return map_coordinates(m, indices, order=self.spline_order, mode='reflect')
             else:
-                channels = [map_coordinates(c, indices, order=self.spline_order, mode='reflect') for c in m]
+                channels = [map_coordinates(
+                    c, indices, order=self.spline_order, mode='reflect') for c in m]
                 return np.stack(channels, axis=0)
 
         return m
@@ -229,7 +237,8 @@ class CropToFixed:
             y_start, y_pad = _start_and_pad(self.crop_y, y)
             x_start, x_pad = _start_and_pad(self.crop_x, x)
 
-        result = m[:, y_start:y_start + self.crop_y, x_start:x_start + self.crop_x]
+        result = m[:, y_start:y_start + self.crop_y,
+                   x_start:x_start + self.crop_x]
         return np.pad(result, pad_width=((0, 0), y_pad, x_pad), mode='reflect')
 
 
@@ -262,20 +271,25 @@ class AbstractLabelToBoundary:
         assert m.ndim == 3
 
         kernels = self.get_kernels()
-        boundary_arr = [np.where(np.abs(convolve(m, kernel)) > 0, 1, 0) for kernel in kernels]
+        boundary_arr = [np.where(np.abs(convolve(m, kernel)) > 0, 1, 0)
+                        for kernel in kernels]
         channels = np.stack(boundary_arr)
         results = []
         if self.aggregate_affinities:
-            assert len(kernels) % 3 == 0, "Number of kernels must be divided by 3 (one kernel per offset per Z,Y,X axes"
+            assert len(
+                kernels) % 3 == 0, "Number of kernels must be divided by 3 (one kernel per offset per Z,Y,X axes"
             # aggregate affinities with the same offset
             for i in range(0, len(kernels), 3):
                 # merge across X,Y,Z axes (logical OR)
-                xyz_aggregated_affinities = np.logical_or.reduce(channels[i:i + 3, ...]).astype(np.int)
+                xyz_aggregated_affinities = np.logical_or.reduce(
+                    channels[i:i + 3, ...]).astype(np.int)
                 # recover ignore index
-                xyz_aggregated_affinities = _recover_ignore_index(xyz_aggregated_affinities, m, self.ignore_index)
+                xyz_aggregated_affinities = _recover_ignore_index(
+                    xyz_aggregated_affinities, m, self.ignore_index)
                 results.append(xyz_aggregated_affinities)
         else:
-            results = [_recover_ignore_index(channels[i], m, self.ignore_index) for i in range(channels.shape[0])]
+            results = [_recover_ignore_index(
+                channels[i], m, self.ignore_index) for i in range(channels.shape[0])]
 
         if self.append_label:
             # append original input data
@@ -317,7 +331,8 @@ class StandardLabelToBoundary:
         results = []
         if self.foreground:
             foreground = (m > 0).astype('uint8')
-            results.append(_recover_ignore_index(foreground, m, self.ignore_index))
+            results.append(_recover_ignore_index(
+                foreground, m, self.ignore_index))
 
         results.append(_recover_ignore_index(boundaries, m, self.ignore_index))
 
@@ -398,7 +413,8 @@ class RandomLabelToAffinities(AbstractLabelToBoundary):
     """
 
     def __init__(self, random_state, max_offset=10, ignore_index=None, append_label=False, z_offset_scale=2, **kwargs):
-        super().__init__(ignore_index=ignore_index, append_label=append_label, aggregate_affinities=False)
+        super().__init__(ignore_index=ignore_index,
+                         append_label=append_label, aggregate_affinities=False)
         self.random_state = random_state
         self.offsets = tuple(range(1, max_offset + 1))
         self.z_offset_scale = z_offset_scale
@@ -427,11 +443,13 @@ class LabelToAffinities(AbstractLabelToBoundary):
         super().__init__(ignore_index=ignore_index, append_label=append_label,
                          aggregate_affinities=aggregate_affinities)
 
-        assert isinstance(offsets, list) or isinstance(offsets, tuple), 'offsets must be a list or a tuple'
+        assert isinstance(offsets, list) or isinstance(
+            offsets, tuple), 'offsets must be a list or a tuple'
         assert all(a > 0 for a in offsets), "'offsets must be positive"
         assert len(set(offsets)) == len(offsets), "'offsets' must be unique"
         if z_offsets is not None:
-            assert len(offsets) == len(z_offsets), 'z_offsets length must be the same as the length of offsets'
+            assert len(offsets) == len(
+                z_offsets), 'z_offsets length must be the same as the length of offsets'
         else:
             # if z_offsets is None just use the offsets for z-affinities
             z_offsets = list(offsets)
@@ -461,7 +479,8 @@ class LabelToZAffinities(AbstractLabelToBoundary):
     def __init__(self, offsets, ignore_index=None, append_label=False, **kwargs):
         super().__init__(ignore_index=ignore_index, append_label=append_label)
 
-        assert isinstance(offsets, list) or isinstance(offsets, tuple), 'offsets must be a list or a tuple'
+        assert isinstance(offsets, list) or isinstance(
+            offsets, tuple), 'offsets must be a list or a tuple'
         assert all(a > 0 for a in offsets), "'offsets must be positive"
         assert len(set(offsets)) == len(offsets), "'offsets' must be unique"
 
@@ -514,7 +533,8 @@ class FlyWingBoundary:
         results = [boundary]
 
         if self.thick_boundary:
-            t_boundary = find_boundaries(m, connectivity=1, mode='outer', background=0)
+            t_boundary = find_boundaries(
+                m, connectivity=1, mode='outer', background=0)
             results.append(t_boundary)
 
         if self.lta is not None:
@@ -615,7 +635,8 @@ class ToTensor:
         self.dtype = dtype
 
     def __call__(self, m):
-        assert m.ndim in [3, 4], 'Supports only 3D (DxHxW) or 4D (CxDxHxW) images'
+        assert m.ndim in [
+            3, 4], 'Supports only 3D (DxHxW) or 4D (CxDxHxW) images'
         # add channel dimension
         if self.expand_dims and m.ndim == 3:
             m = np.expand_dims(m, axis=0)
@@ -648,7 +669,8 @@ class Identity:
 
 
 def get_transformer(config, min_value, max_value, mean, std):
-    base_config = {'min_value': min_value, 'max_value': max_value, 'mean': mean, 'std': std}
+    base_config = {'min_value': min_value,
+                   'max_value': max_value, 'mean': mean, 'std': std}
     return Transformer(config, base_config)
 
 
