@@ -35,7 +35,7 @@ trainer:
   # path to the checkpoint directory
   checkpoint_dir: "/Extra/grad/data2019/bs_going" #single
   # path to latest checkpoint; if provided the training will be resumed from that checkpoint
-  #pre_trained: "/home/cwx/Datasets/rs_going/best_checkpoint.pytorch" #"/home/cwx/Datasets/single_2/best_checkpoint.pytorch"
+  # pre_trained: "/home/cwx/Datasets/rs_going/best_checkpoint.pytorch" #"/home/cwx/Datasets/single_2/best_checkpoint.pytorch"
   # how many iterations between validations
   validate_after_iters: 200
   # how many iterations between tensorboard logging
@@ -154,7 +154,7 @@ loaders:
     # paths to the val datasets
     file_paths:
       #- 'conf/fake.list'
-      - 'conf/train_rs.list'
+      - 'conf/test_rs.list'
 
     # data augmentation
     transformer:
