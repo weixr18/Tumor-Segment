@@ -188,12 +188,8 @@ class RS3DTrainer:
         # clear the gradients
         self.optimizer.zero_grad()
 
-        # training cycle
+        # training loop
         for i, t in enumerate(train_loader):
-
-            # logger.info(
-            #    f'Training iteration {self.num_iterations}. Batch {i}. Epoch [{self.num_epoch}/{self.max_num_epochs - 1}]'
-            # )
 
             # prepare input & target
             input, target, _ = self._split_training_batch(t)
@@ -286,8 +282,11 @@ class RS3DTrainer:
         return False
 
     def validate(self, val_loader):
+
+        # logger
         logger.info('Validating...')
 
+        # initialize statistics recorders
         val_losses = utils.RunningAverage()
         val_scores = utils.RunningAverage()
         vals1_losses = utils.RunningAverage()
@@ -295,36 +294,52 @@ class RS3DTrainer:
         valr1_losses = utils.RunningAverage()
         valr2_losses = utils.RunningAverage()
         vali_losses = utils.RunningAverage()
+
+        # evaluation epoch
         with torch.no_grad():
             for i, t in enumerate(val_loader):
+
                 #logger.info(f'Validation iteration {i}')
 
+                # prepare input & target
                 input, target, _ = self._split_training_batch(t)
                 target = target.cuda()
+
+                # forward pass
                 Ls1, Ls2, Lr1, Lr2, Li, S0, I1, S1, I2, S2, S3 = self._forward_pass(
                     input, target)
-                loss = Ls1+Ls2+Lr1+Lr2+Li
+                loss = Ls1 + Ls2 + Lr1 + Lr2 + Li
+
+                # log loss & evaluation statistics
                 val_losses.update(loss.item(), self._batch_size(input))
                 vals1_losses.update(Ls1.item(), self._batch_size(input))
                 vals2_losses.update(Ls2.item(), self._batch_size(input))
                 valr1_losses.update(Lr1.item(), self._batch_size(input))
                 valr2_losses.update(Lr2.item(), self._batch_size(input))
                 vali_losses.update(Li.item(), self._batch_size(input))
-                if i % 100 == 0:
-                    self._log_images(input, target, S0, I1,
-                                     S1, I2, S2, S3, 'val_')
 
+                # calc evaluation score
                 eval_score = self.eval_criterion(S3, target)
                 val_scores.update(eval_score.item(), self._batch_size(input))
 
+                # log images
+                if i % 100 == 0:
+                    self._log_images(
+                        input, target, S0, I1, S1, I2, S2, S3, 'val_'
+                    )
+
+                # stop validation
                 if self.validate_iters is not None and self.validate_iters <= i:
-                    # stop validation
                     break
 
-            self._log_stats('val', val_losses.avg, val_scores.avg, vals1_losses.avg,
-                            vals2_losses.avg, valr1_losses.avg, valr2_losses.avg, vali_losses.avg)
+            # log stats
+            self._log_stats(
+                'val', val_losses.avg, val_scores.avg, vals1_losses.avg,
+                vals2_losses.avg, valr1_losses.avg, valr2_losses.avg, vali_losses.avg
+            )
             logger.info(
-                f'Validation finished. Loss: {val_losses.avg}. Evaluation score: {val_scores.avg}')
+                f'Validation finished. Loss: {val_losses.avg}. Evaluation score: {val_scores.avg}'
+            )
             return val_scores.avg
 
     def _split_training_batch(self, t):
