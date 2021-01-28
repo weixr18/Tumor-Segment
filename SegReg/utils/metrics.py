@@ -29,8 +29,13 @@ class DiceCoefficient:
         self.epsilon = epsilon
 
     def __call__(self, input, target):
-        if isinstance(input, list):
 
+        if isinstance(input, torch.Tensor):
+            input = (input > 0.0).long()
+            target = (target > 0.0).long()
+            # Average across channels in order to get the final score
+            return torch.mean(compute_per_channel_dice(input, target, epsilon=self.epsilon))
+        else:
             target = (target > 0.0).long()
             alldice = []
             for i, aseg in enumerate(input):
@@ -38,9 +43,6 @@ class DiceCoefficient:
                 alldice.append(compute_per_channel_dice(
                     aseg, target[:, i:i+1, :, :, :], epsilon=self.epsilon))
             return torch.mean(torch.stack(alldice, -1))
-        else:
-            # Average across channels in order to get the final score
-            return torch.mean(compute_per_channel_dice(input, target, epsilon=self.epsilon))
 
 
 class MeanIoU:
@@ -392,7 +394,7 @@ class GenericAveragePrecision:
             segs_aps = [self.metric(self._filter_instances(seg), tar)
                         for seg in segs]
 
-            #logger.info(f'Max Average Precision for channel: {np.argmax(segs_aps)}')
+            # logger.info(f'Max Average Precision for channel: {np.argmax(segs_aps)}')
             # save max AP
             batch_aps.append(np.max(segs_aps))
 
@@ -437,7 +439,7 @@ class BlobsAveragePrecision(GenericAveragePrecision):
         for th in self.thresholds:
             # threshold and run connected components
             mask = (input > th).astype(np.uint8)
-            #seg = measure.label(mask, background=0, connectivity=1)
+            # seg = measure.label(mask, background=0, connectivity=1)
             segs.append(mask)
         return np.stack(segs)
 

@@ -34,15 +34,12 @@ class RSModel(nn.Module):
         self.reg_loss = reg_loss
         self.imp_loss = imp_loss
 
-    def forward(self, I: list, S: list, baseline=False, transformed=False):
+    def forward(self, I: list, S: list, baseline=False):
         # S=S+1
 
         # Segment phase 1
         S0 = self.segmenter(I)  # [batch_size, channel, z, x, y]
-        if not transformed:
-            S0 = torch.tanh(S0)
-        else:
-            S0 = S0.sigmoid()
+        S0 = torch.tanh(S0)
         Ls1 = self.seg_loss(S0, S) * 10
         if baseline:
             return Ls1, Ls1, Ls1, Ls1, Ls1, S0, S0, S0, S0, S0, S0
@@ -56,6 +53,7 @@ class RSModel(nn.Module):
 
         # Segment phase 2
         S2 = self.segmenter(I1)
+        S2 = torch.tanh(S2)
         Ls2 = self.seg_loss(S2, S) * 3
 
         # Regression phase 2

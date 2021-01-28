@@ -154,6 +154,7 @@ def compute_per_channel_dice(input, target, epsilon=1e-6, weight=None):
 
     input = flatten(input)
     target = flatten(target)
+    input = input.float()
     target = target.float()
 
     # compute per channel Dice Coefficient
