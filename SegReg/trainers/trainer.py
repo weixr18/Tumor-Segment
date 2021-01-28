@@ -175,13 +175,13 @@ class RS3DTrainer:
         """
 
         # initialize statistic recorders
-        train_losses = utils.RunningAverage()
-        trains1_losses = utils.RunningAverage()
-        trains2_losses = utils.RunningAverage()
-        trainr1_losses = utils.RunningAverage()
-        trainr2_losses = utils.RunningAverage()
-        traini_losses = utils.RunningAverage()
-        train_eval_scores = utils.RunningAverage()
+        # train_losses = utils.RunningAverage()
+        # trains1_losses = utils.RunningAverage()
+        # trains2_losses = utils.RunningAverage()
+        # trainr1_losses = utils.RunningAverage()
+        # trainr2_losses = utils.RunningAverage()
+        # traini_losses = utils.RunningAverage()
+        # train_eval_scores = utils.RunningAverage()
 
         # sets the model in training mode
         self.model.train()
@@ -199,20 +199,31 @@ class RS3DTrainer:
             Ls1, Ls2, Lr1, Lr2, Li, S0, I1, S1, I2, S2, S3 = self._forward_pass(
                 input, target)
             loss = Ls1 + Ls2 + Lr1 + Lr2 + Li
+            # summary for multiple GPUs
+            Ls1 = Ls1.sum()
+            Ls2 = Ls2.sum()
+            Lr1 = Lr1.sum()
+            Lr2 = Lr2.sum()
+            Li = Li.sum()
+            loss = loss.sum()
 
             # calc evaluation score
             eval_score = self.eval_criterion(S3, target)
 
             # log loss & evaluation statistics
-            train_losses.update(loss.item(), self._batch_size(input))
-            trains1_losses.update(Ls1.item(), self._batch_size(input))
-            trains2_losses.update(Ls2.item(), self._batch_size(input))
-            trainr1_losses.update(Lr1.item(), self._batch_size(input))
-            trainr2_losses.update(Lr2.item(), self._batch_size(input))
-            traini_losses.update(Li.item(), self._batch_size(input))
-            train_eval_scores.update(
-                eval_score.item(), self._batch_size(input))
-            self._log_stats('train', loss, eval_score, Ls1, Ls2, Lr1, Lr2, Li)
+            # train_losses.update(loss.mean().item(), self._batch_size(input))
+            # trains1_losses.update(Ls1.mean().item(), self._batch_size(input))
+            # trains2_losses.update(Ls2.mean().item(), self._batch_size(input))
+            # trainr1_losses.update(Lr1.mean().item(), self._batch_size(input))
+            # trainr2_losses.update(Lr2.mean().item(), self._batch_size(input))
+            # traini_losses.update(Li.mean().item(), self._batch_size(input))
+            # train_eval_scores.update(
+            #     eval_score.mean().item(), self._batch_size(input))
+
+            self._log_stats(
+                'train', loss, eval_score, Ls1, Ls2,
+                Lr1, Lr2, Li
+            )
 
             # compute gradients and update parameters
             loss.backward()
@@ -223,7 +234,7 @@ class RS3DTrainer:
                 self.optimizer.zero_grad()
 
             # validate model every [validate_after_iters] steps
-            if self.num_iterations % self.validate_after_iters == 0:
+            if self.num_iterations % 1 == 0:  # self.validate_after_iters == 0:
 
                 # set the model in eval mode
                 self.model.eval()
@@ -251,6 +262,7 @@ class RS3DTrainer:
                     f'Training stats. Loss: {train_losses.avg}. Evaluation score: {train_eval_scores.avg}'
                 )
                 self._log_params()
+
                 self._log_images(input, target, S0, I1,
                                  S1, I2, S2, S3, 'train_')
 
@@ -311,16 +323,17 @@ class RS3DTrainer:
                 loss = Ls1 + Ls2 + Lr1 + Lr2 + Li
 
                 # log loss & evaluation statistics
-                val_losses.update(loss.item(), self._batch_size(input))
-                vals1_losses.update(Ls1.item(), self._batch_size(input))
-                vals2_losses.update(Ls2.item(), self._batch_size(input))
-                valr1_losses.update(Lr1.item(), self._batch_size(input))
-                valr2_losses.update(Lr2.item(), self._batch_size(input))
-                vali_losses.update(Li.item(), self._batch_size(input))
+                val_losses.update(loss.mean().item(), self._batch_size(input))
+                vals1_losses.update(Ls1.mean().item(), self._batch_size(input))
+                vals2_losses.update(Ls2.mean().item(), self._batch_size(input))
+                valr1_losses.update(Lr1.mean().item(), self._batch_size(input))
+                valr2_losses.update(Lr2.mean().item(), self._batch_size(input))
+                vali_losses.update(Li.mean().item(), self._batch_size(input))
 
                 # calc evaluation score
                 eval_score = self.eval_criterion(S3, target)
-                val_scores.update(eval_score.item(), self._batch_size(input))
+                val_scores.update(eval_score.mean().item(),
+                                  self._batch_size(input))
 
                 # log images
                 if i % 100 == 0:

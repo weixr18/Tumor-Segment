@@ -20,7 +20,7 @@ from utils.utils import get_number_of_learnable_parameters
 from utils.utils import get_logger, get_tensorboard_formatter
 
 logger = get_logger('Train')
-os.environ['CUDA_VISIBLE_DEVICES'] = '2'
+#os.environ['CUDA_VISIBLE_DEVICES'] = '0,1'
 
 
 def load_config(train):
