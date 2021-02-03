@@ -20,7 +20,7 @@ from utils.utils import get_number_of_learnable_parameters
 from utils.utils import get_logger, get_tensorboard_formatter
 
 logger = get_logger('Train')
-#os.environ['CUDA_VISIBLE_DEVICES'] = '0,1'
+os.environ['CUDA_VISIBLE_DEVICES'] = '0, 1'
 
 
 def load_config(train):
@@ -185,6 +185,8 @@ def _create_model(config):
     use_batch_norm = model_config['use_batch_norm']
     group_num = model_config['group_num']
     use_separable = model_config['use_separable']
+    encoder_channels = model_config['encoder_channels']
+    decoder_channels = model_config['decoder_channels']
 
     if config['trainer']['transformed']:
         segloss = nn.MSELoss()
@@ -198,6 +200,8 @@ def _create_model(config):
         seg_loss=segloss,
         reg_loss=regloss,
         imp_loss=imp_loss,
+        enc_nf=encoder_channels,
+        dec_nf=decoder_channels,
         num_modality=3,
         num_cls=2,
         use_bn=use_batch_norm,

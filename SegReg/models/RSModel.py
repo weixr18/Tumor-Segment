@@ -5,9 +5,9 @@ from .voxelmorph import UNet, ShapeMorph3d
 
 
 class Segmenter(nn.Module):
-    def __init__(self, modality=3, num_of_cls=1, use_bn=False,
-                 group_num=1,
-                 use_separable=False):
+    def __init__(self, enc_nf, dec_nf,
+                 modality=3, num_of_cls=1,
+                 use_bn=False, group_num=1, use_separable=False,):
         super(Segmenter, self).__init__()
         ####################################################################
         # Segmenter UNet
@@ -17,7 +17,9 @@ class Segmenter(nn.Module):
             for_seg=True,
             use_bn=use_bn,
             group_num=group_num,
-            use_separable=use_separable
+            use_separable=use_separable,
+            enc_nf=enc_nf,
+            dec_nf=dec_nf,
         )
         ####################################################################
         self.modality = modality
@@ -36,18 +38,25 @@ class Segmenter(nn.Module):
 
 
 class RSModel(nn.Module):
-    def __init__(self, seg_loss, reg_loss, imp_loss,
+    def __init__(self, seg_loss, reg_loss, imp_loss, enc_nf, dec_nf,
                  num_modality=3, num_cls=2,
                  use_bn=False, group_num=1, use_separable=False):
         super(RSModel, self).__init__()
         self.segmenter = Segmenter(
             modality=num_modality,
             num_of_cls=1,
+            enc_nf=enc_nf,
+            dec_nf=dec_nf,
             use_bn=use_bn,
             group_num=group_num,
             use_separable=use_separable
         )
-        self.register = ShapeMorph3d(4, num_modality)
+        self.register = ShapeMorph3d(
+            enc_nf=enc_nf,
+            dec_nf=dec_nf,
+            in_channels=4,
+            num_mods=num_modality
+        )
         self.num_modality = num_modality
         self.num_cls = num_cls
         self.seg_loss = seg_loss

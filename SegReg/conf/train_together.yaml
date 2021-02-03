@@ -15,6 +15,12 @@ model:
   group_num: 4
   # whether use separable conv
   use_separable: true
+  # encoder feature map channels
+  encoder_channels: [16, 32, 32, 32]
+  # encoder_channels: [8, 16, 16, 32]
+  # decoder feature map channels
+  decoder_channels: [32, 32, 32, 32, 8, 8]
+  # decoder_channels: [32, 32, 16, 16, 8, 8],
 
   # model class, e.g. UNet3D, ResidualUNet3D
   # name: ResidualUNet3D

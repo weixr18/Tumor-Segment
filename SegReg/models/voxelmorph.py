@@ -15,7 +15,7 @@ class UNet(nn.Module):
         """
         Arguments:
         enc_nf: [int], number of features in each encoder layer.
-        dnc_nf: [int], number of features in each encoder layer.
+        dec_nf: [int], number of features in each encoder layer.
         """
         super(UNet, self).__init__()
         self.use_bn = use_bn
@@ -193,10 +193,9 @@ class SpatialTransformation(nn.Module):
 
 
 class ShapeMorph3d(nn.Module):
-    def __init__(self, in_channels=4, num_mods=2,
-                 use_bn=False,
-                 group_num=1,
-                 use_separable=False):
+    def __init__(self, enc_nf, dec_nf,
+                 in_channels=4, num_mods=2,
+                 use_bn=False, group_num=1, use_separable=False):
         super(ShapeMorph3d, self).__init__()
         ###################################################
         # Regression UNet
@@ -205,7 +204,9 @@ class ShapeMorph3d(nn.Module):
             for_seg=False,
             use_bn=use_bn,
             group_num=group_num,
-            use_separable=use_separable
+            use_separable=use_separable,
+            enc_nf=enc_nf,
+            dec_nf=dec_nf,
         )
         ###################################################
         self.spatial_transform = SpatialTransformation()
