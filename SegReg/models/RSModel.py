@@ -5,13 +5,20 @@ from .voxelmorph import UNet, ShapeMorph3d
 
 
 class Segmenter(nn.Module):
-    def __init__(self, modality=3, num_of_cls=1):
+    def __init__(self, modality=3, num_of_cls=1, use_bn=False,
+                 group_num=1,
+                 use_separable=False):
         super(Segmenter, self).__init__()
         ####################################################################
         # Segmenter UNet
-        self.nets = UNet(in_channels=modality,
-                         out_channels=modality*num_of_cls,
-                         for_seg=True)
+        self.nets = UNet(
+            in_channels=modality,
+            out_channels=modality*num_of_cls,
+            for_seg=True,
+            use_bn=use_bn,
+            group_num=group_num,
+            use_separable=use_separable
+        )
         ####################################################################
         self.modality = modality
         self.num_of_cls = num_of_cls
@@ -29,9 +36,17 @@ class Segmenter(nn.Module):
 
 
 class RSModel(nn.Module):
-    def __init__(self, seg_loss, reg_loss, imp_loss, num_modality=3, num_cls=2):
+    def __init__(self, seg_loss, reg_loss, imp_loss,
+                 num_modality=3, num_cls=2,
+                 use_bn=False, group_num=1, use_separable=False):
         super(RSModel, self).__init__()
-        self.segmenter = Segmenter(num_modality, 1)
+        self.segmenter = Segmenter(
+            modality=num_modality,
+            num_of_cls=1,
+            use_bn=use_bn,
+            group_num=group_num,
+            use_separable=use_separable
+        )
         self.register = ShapeMorph3d(4, num_modality)
         self.num_modality = num_modality
         self.num_cls = num_cls

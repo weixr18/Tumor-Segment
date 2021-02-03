@@ -87,7 +87,11 @@ class UNet(nn.Module):
             conv_fn = SeparableConv3d
         else:
             conv_fn = nn.Conv3d
-        groups = self.group_num
+
+        if in_channels % self.group_num == 0:
+            groups = self.group_num
+        else:
+            groups = 1
 
         if self.use_bn:
             bn_fn = nn.BatchNorm3d
@@ -188,27 +192,21 @@ class SpatialTransformation(nn.Module):
         return F.grid_sample(src, new_locs, mode=self.mode)
 
 
-class VoxelMorph3d(nn.Module):
-    def __init__(self, in_channels=4):
-        super(VoxelMorph3d, self).__init__()
-        self.unet = UNet(in_channels, for_seg=False)
-        self.spatial_transform = SpatialTransformation()
-
-    def forward(self, moving_image, moving_seg, fixed_image):
-        x = torch.cat([moving_image, fixed_image], dim=1)
-        deformation_matrix = self.unet(x)
-        registered_image = self.spatial_transform(
-            moving_image, deformation_matrix)
-        registered_seg = self.spatial_transform(moving_seg, deformation_matrix)
-        return registered_image, registered_seg, deformation_matrix
-
-
 class ShapeMorph3d(nn.Module):
-    def __init__(self, in_channels=4, num_mods=2):
+    def __init__(self, in_channels=4, num_mods=2,
+                 use_bn=False,
+                 group_num=1,
+                 use_separable=False):
         super(ShapeMorph3d, self).__init__()
         ###################################################
         # Regression UNet
-        self.unet = UNet(in_channels, for_seg=False)
+        self.unet = UNet(
+            in_channels=in_channels,
+            for_seg=False,
+            use_bn=use_bn,
+            group_num=group_num,
+            use_separable=use_separable
+        )
         ###################################################
         self.spatial_transform = SpatialTransformation()
         self.num_mods = num_mods

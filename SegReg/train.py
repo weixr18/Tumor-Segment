@@ -11,10 +11,10 @@ import torch.optim as optim
 import torch.nn as nn
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 
-from datasets.utils import get_train_loaders
-from utils.losses import vox_morph_loss
 from models.RSModel import RSModel
 from trainers.trainer import RS3DTrainer
+from datasets.utils import get_train_loaders
+from utils.losses import vox_morph_loss
 from utils.metrics import get_evaluation_metric
 from utils.utils import get_number_of_learnable_parameters
 from utils.utils import get_logger, get_tensorboard_formatter
@@ -178,6 +178,35 @@ def _create_lr_scheduler(config, optimizer):
         return clazz(**lr_config)
 
 
+def _create_model(config):
+
+    assert 'model' in config, 'Cannot find model configuration'
+    model_config = config['model']
+    use_batch_norm = model_config['use_batch_norm']
+    group_num = model_config['group_num']
+    use_separable = model_config['use_separable']
+
+    if config['trainer']['transformed']:
+        segloss = nn.MSELoss()
+    else:
+        segloss = BCEDiceLoss(0.5, 0.5)
+        config['loaders']['label_internal_path'] = 'raw-label'
+    regloss = vox_morph_loss
+    imp_loss = nn.SoftMarginLoss()
+
+    model = RSModel(
+        seg_loss=segloss,
+        reg_loss=regloss,
+        imp_loss=imp_loss,
+        num_modality=3,
+        num_cls=2,
+        use_bn=use_batch_norm,
+        group_num=group_num,
+        use_separable=use_separable
+    )
+    return model
+
+
 def main():
     # Load and log experiment configuration
     config = load_config(True)
@@ -192,14 +221,7 @@ def main():
         torch.backends.cudnn.benchmark = False
 
     # Create the model
-    if config['trainer']['transformed']:
-        segloss = nn.MSELoss()
-    else:
-        segloss = BCEDiceLoss(0.5, 0.5)
-        config['loaders']['label_internal_path'] = 'raw-label'
-    regloss = vox_morph_loss
-    imp_loss = nn.SoftMarginLoss()
-    model = RSModel(segloss, regloss, imp_loss)
+    model = _create_model(config)
     # use DataParallel if more than 1 GPU available
     device = config['device']
     if torch.cuda.device_count() > 1:
@@ -213,8 +235,6 @@ def main():
         f'Number of learnable params {get_number_of_learnable_parameters(model)}'
     )
 
-    # Create loss criterion
-    #loss_criterion = get_loss_criterion(config)
     # Create evaluation metric
     eval_criterion = get_evaluation_metric(config)
 

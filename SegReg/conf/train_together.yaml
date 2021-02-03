@@ -9,24 +9,31 @@ baseline_model: true
 
 # model configuration
 model:
+  # use batch normalization
+  use_batch_norm: false
+  # number of groups in the groupconv
+  group_num: 4
+  # whether use separable conv
+  use_separable: true
+
   # model class, e.g. UNet3D, ResidualUNet3D
-  name: ResidualUNet3D
+  # name: ResidualUNet3D
   # number of input channels to the model
-  in_channels: 3
+  # in_channels: 3
   # number of output channels
-  out_channels: 2
+  # out_channels: 2
   # determines the order of operators in a single layer (gcr - GroupNorm+Conv3d+ReLU)
-  layer_order: gcr
+  # layer_order: gcr
   # number of features at each level of the U-Net
-  f_maps: [16, 32, 32, 64] #[32, 64, 64, 128]
+  # f_maps: [32, 64, 64, 128]
   # number of groups in the groupnorm
-  num_groups: 16
+  # num_groups: 16
   # apply element-wise nn.Sigmoid after the final 1x1 convolution, otherwise apply nn.Softmax
   # this is only relevant during inference, during training the network outputs logits and it is up to the loss function
   # to normalize with Sigmoid or Softmax
-  final_sigmoid: true
+  # final_sigmoid: true
   # if True applies the final normalization layer (sigmoid or softmax), otherwise the networks returns the output from the final convolution layer; use False for regression problems, e.g. de-noising
-  is_segmentation: true
+  # is_segmentation: true
 
 # trainer configuration
 trainer:
