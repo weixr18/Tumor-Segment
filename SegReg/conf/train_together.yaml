@@ -9,12 +9,12 @@ baseline_model: true
 
 # model configuration
 model:
+  # whether use separable conv. This will DISABLE group_num.
+  use_separable: true
   # use batch normalization
   use_batch_norm: false
   # number of groups in the groupconv
   group_num: 4
-  # whether use separable conv
-  use_separable: true
   # encoder feature map channels
   encoder_channels: [16, 32, 32, 32]
   # encoder_channels: [8, 16, 16, 32]
@@ -43,12 +43,15 @@ model:
 
 # trainer configuration
 trainer:
+  # whether train the baseline model
   baseline_model: false
+  # whether the input image has been distance transformed
   transformed: true
   # path to the checkpoint directory
-  checkpoint_dir: "/Extra/grad/data2019/bs_going" #single
+  checkpoint_dir: "/mnt/newdisk0/wxr/logs" #single
   # path to latest checkpoint; if provided the training will be resumed from that checkpoint
   # pre_trained: "/home/cwx/Datasets/rs_going/best_checkpoint.pytorch" #"/home/cwx/Datasets/single_2/best_checkpoint.pytorch"
+  
   # how many iterations between validations
   validate_after_iters: 200
   # how many iterations between tensorboard logging

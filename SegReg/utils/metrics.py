@@ -2,7 +2,7 @@ import importlib
 import os
 import time
 
-import hdbscan
+# import hdbscan
 import numpy as np
 import torch
 from skimage import measure
@@ -297,6 +297,7 @@ class GenericAdaptedRandError(AdaptedRandError):
         return np.stack(segs)
 
 
+"""
 class EmbeddingsAdaptedRandError(AdaptedRandError):
     def __init__(self, min_cluster_size=100, min_samples=None, metric='euclidean', cluster_selection_method='eom',
                  save_plots=False, plots_dir='.', **kwargs):
@@ -328,9 +329,11 @@ class EmbeddingsAdaptedRandError(AdaptedRandError):
         segm[segm == -1] = noise_label
 
         return np.expand_dims(segm, axis=0)
-
+"""
 
 # Just for completeness, however sklean MeanShift implementation is just too slow for clustering embeddings
+
+
 class EmbeddingsMeanShiftAdaptedRandError(AdaptedRandError):
     def __init__(self, bandwidth, save_plots=False, plots_dir='.', **kwargs):
         super().__init__(save_plots=save_plots, plots_dir=plots_dir, **kwargs)

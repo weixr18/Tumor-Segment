@@ -12,13 +12,13 @@ from scipy.ndimage import distance_transform_edt
 
 from datasets.utils_sitk import *
 
-path_prefix = "/Extra/grad/data2019"
+path_prefix = "/mnt/data1/mvi2/data2019"
 raw_path = path_prefix + '/cyst_seg'
 mvi_data_path = path_prefix + '/MVI'
 notmvi_data_path = path_prefix + '/not MVI'
 IMG_SCALE = 352
 
-output_path = path_prefix + '/h5_3mod_512'
+output_path = '/mnt/data1/mvi2/h5_3mod_512'
 # output_path2='/mnt/data1/mvi2/nrrd_t1post_3mod_noreg'
 os.makedirs(output_path, exist_ok=True)
 # os.makedirs(output_path2,exist_ok=True)

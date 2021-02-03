@@ -146,8 +146,8 @@ class SeparableConv3d(nn.Module):
         super(SeparableConv3d, self).__init__()
 
         self.depthwise = nn.Conv3d(
-            in_channels, out_channels, kernel_size,
-            stride, padding, dilation, groups=groups, bias=bias
+            in_channels, in_channels, kernel_size,
+            stride, padding, dilation, groups=in_channels, bias=bias
         )
         self.pointwise = nn.Conv3d(
             in_channels, out_channels, kernel_size=1,

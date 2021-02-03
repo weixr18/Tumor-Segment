@@ -2,9 +2,7 @@
 import os
 import random
 
-path_prefix = "/Extra/grad/data2019"
-
-root = path_prefix + '/h5_3mod_512'
+root = "/mnt/data1/mvi2/h5_3mod_512"
 files = os.listdir(root)
 random.shuffle(files)
 with open('train_rs.list', 'w') as f:
