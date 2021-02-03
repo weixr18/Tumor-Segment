@@ -1,8 +1,0 @@
-.vscode
-.conf
-old/*
-data/*
-*/__pycache__
-*.zip
-*.pyc
-*.log
