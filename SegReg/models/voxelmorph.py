@@ -8,102 +8,152 @@ IMG_SCALE = 352
 
 
 class UNet(nn.Module):
-    def __init__(self, in_channels=4, out_channel=2, dim=3, enc_nf=[8, 16, 16, 32], dec_nf=[32, 32, 16, 16, 8, 8],
-                 bn=None, full_size=True, forseg=False):
+    def __init__(self, in_channels=4, out_channels=2,
+                 enc_nf=[8, 16, 16, 32], dec_nf=[32, 32, 16, 16, 8, 8],
+                 full_size=True, for_seg=False,
+                 use_bn=False, group_num=1, use_separable=False):
+        """
+        Arguments:
+        enc_nf: [int], number of features in each encoder layer.
+        dnc_nf: [int], number of features in each encoder layer.
+        """
         super(UNet, self).__init__()
-        self.bn = bn
-        self.dim = dim
+        self.use_bn = use_bn
+        self.use_separable = use_separable
         self.enc_nf = enc_nf
-        self.full_size = full_size
-        self.vm2 = len(dec_nf) == 7
+        self.dec_nf = dec_nf
+        self.group_num = group_num
+        self.for_seg = for_seg
+
         # Encoder functions
         self.enc = nn.ModuleList()
         for i in range(len(enc_nf)):
             prev_nf = in_channels if i == 0 else enc_nf[i - 1]
             self.enc.append(self.conv_block(
-                dim, prev_nf, enc_nf[i], 3, 2, batchnorm=bn))
+                in_channels=prev_nf, out_channels=enc_nf[i],
+                kernel_size=3, stride=2
+            ))
+
         # Decoder functions
         self.dec = nn.ModuleList()
         self.dec.append(self.conv_block(
-            dim, enc_nf[3], dec_nf[0], batchnorm=bn))  # 1
+            in_channels=enc_nf[3], out_channels=dec_nf[0]))  # 1
         self.dec.append(self.conv_block(
-            dim, dec_nf[0] + enc_nf[2], dec_nf[1], batchnorm=bn))  # 2
+            in_channels=dec_nf[0] + enc_nf[2], out_channels=dec_nf[1]))  # 2
         self.dec.append(self.conv_block(
-            dim, dec_nf[1] + enc_nf[1], dec_nf[2], batchnorm=bn))  # 3
+            in_channels=dec_nf[1] + enc_nf[1], out_channels=dec_nf[2]))  # 3
         self.dec.append(self.conv_block(
-            dim, dec_nf[2] + enc_nf[0], dec_nf[3], batchnorm=bn))  # 4
+            in_channels=dec_nf[2] + enc_nf[0], out_channels=dec_nf[3]))  # 4
         self.dec.append(self.conv_block(
-            dim, dec_nf[3], dec_nf[4], batchnorm=bn))  # 5
-        self.forseg = forseg
-        if self.full_size:
-            self.dec.append(self.conv_block(
-                dim, dec_nf[4] + in_channels, dec_nf[5], batchnorm=bn))
-        if self.vm2:
-            self.vm2_conv = self.conv_block(
-                dim, dec_nf[5], dec_nf[6], batchnorm=bn)
+            in_channels=dec_nf[3], out_channels=dec_nf[4]))  # 5
+        self.dec.append(self.conv_block(
+            in_channels=dec_nf[4] + in_channels, out_channels=dec_nf[5]))  # 6
+
+        # upsample layer
         self.upsample = nn.Upsample(scale_factor=2, mode='nearest')
 
-        # One conv to get the flow field
-        conv_fn = getattr(nn, 'Conv%dd' % dim)
-        if forseg:
-            self.seg = conv_fn(dec_nf[-1], out_channel,
-                               kernel_size=3, padding=1)
+        # last_conv layer to get the flow field or segment map.
+        if self.use_separable:
+            conv_fn = SeparableConv3d
         else:
-            self.flow = conv_fn(dec_nf[-1], dim, kernel_size=3, padding=1)
+            conv_fn = nn.Conv3d
+        if for_seg:
+            # segmenter network
+            self.last_conv = conv_fn(
+                in_channels=dec_nf[-1], out_channels=out_channels,
+                kernel_size=3, padding=1)
+        else:
+            # regression network
+            flow = conv_fn(
+                in_channels=dec_nf[-1],
+                out_channels=3,  # dimension=3
+                kernel_size=3, padding=1)
+
             # Make flow weights + bias small. Not sure this is necessary.
             nd = Normal(0, 1e-5)
-            self.flow.weight = nn.Parameter(nd.sample(self.flow.weight.shape))
-            self.flow.bias = nn.Parameter(torch.zeros(self.flow.bias.shape))
-            self.batch_norm = getattr(nn, "BatchNorm{0}d".format(dim))(3)
+            flow.weight = nn.Parameter(nd.sample(flow.weight.shape))
+            flow.bias = nn.Parameter(torch.zeros(flow.bias.shape))
 
-    def conv_block(self, dim, in_channels, out_channels, kernel_size=3, stride=1, padding=1, batchnorm=False):
-        conv_fn = getattr(nn, "Conv{0}d".format(dim))
-        bn_fn = getattr(nn, "BatchNorm{0}d".format(dim))
-        if batchnorm:
+            if self.use_bn:
+                last_bn = nn.BatchNorm3d(3)
+                self.last_conv = nn.Sequential(flow, last_bn)
+            else:
+                self.last_conv = flow
+
+    def conv_block(self, in_channels, out_channels,
+                   kernel_size=3, stride=1, padding=1):
+
+        if self.use_separable:
+            conv_fn = SeparableConv3d
+        else:
+            conv_fn = nn.Conv3d
+        groups = self.group_num
+
+        if self.use_bn:
+            bn_fn = nn.BatchNorm3d
             layer = nn.Sequential(
                 conv_fn(in_channels, out_channels, kernel_size,
-                        stride=stride, padding=padding),
+                        stride=stride, padding=padding, groups=groups),
                 bn_fn(out_channels),
-                nn.LeakyReLU(0.2))
+                nn.LeakyReLU(0.2)
+            )
         else:
             layer = nn.Sequential(
                 conv_fn(in_channels, out_channels, kernel_size,
-                        stride=stride, padding=padding),
-                nn.LeakyReLU(0.2))
+                        stride=stride, padding=padding, groups=groups),
+                nn.LeakyReLU(0.2)
+            )
         return layer
 
     def forward(self, x):
+
         if isinstance(x, list):
             x = torch.stack(x, 1)
+
+        # Encoder
         x_enc = [x]
         for i, l in enumerate(self.enc):
             x = l(x_enc[-1])
             x_enc.append(x)
-        # Three conv + upsample + concatenate series
+
+        # Decoder
         y = x_enc[-1]
+        # 3 conv + upsample + concatenate series
         for i in range(3):
             y = self.dec[i](y)
             y = self.upsample(y)
             y = torch.cat([y, x_enc[-(i + 2)]], dim=1)
-        # Two convs at full_size/2 res
+        # 2 convs at full_size/2 res
         y = self.dec[3](y)
         y = self.dec[4](y)
         # Upsample to full res, concatenate and conv
-        if self.full_size:
-            y = self.upsample(y)
-            y = torch.cat([y, x_enc[0]], dim=1)
-            y = self.dec[5](y)
-        # Extra conv for vm2
-        if self.vm2:
-            y = self.vm2_conv(y)
-        if self.forseg:
-            y = self.seg(y)
-            return y
-        else:
-            flow = self.flow(y)
-            if self.bn:
-                flow = self.batch_norm(flow)
-            return flow
+        y = self.upsample(y)
+        y = torch.cat([y, x_enc[0]], dim=1)
+        y = self.dec[5](y)
+
+        # Last conv layer
+        y = self.last_conv(y)
+        return y
+
+
+class SeparableConv3d(nn.Module):
+    def __init__(self, in_channels, out_channels, kernel_size,
+                 stride=1, padding=0, dilation=1, groups=1, bias=False):
+        super(SeparableConv3d, self).__init__()
+
+        self.depthwise = nn.Conv3d(
+            in_channels, out_channels, kernel_size,
+            stride, padding, dilation, groups=groups, bias=bias
+        )
+        self.pointwise = nn.Conv3d(
+            in_channels, out_channels, kernel_size=1,
+            stride=1, padding=0, dilation=1, groups=1, bias=bias
+        )
+
+    def forward(self, x):
+        x = self.depthwise(x)
+        x = self.pointwise(x)
+        return x
 
 
 class SpatialTransformation(nn.Module):
@@ -141,7 +191,7 @@ class SpatialTransformation(nn.Module):
 class VoxelMorph3d(nn.Module):
     def __init__(self, in_channels=4):
         super(VoxelMorph3d, self).__init__()
-        self.unet = UNet(in_channels, forseg=False)
+        self.unet = UNet(in_channels, for_seg=False)
         self.spatial_transform = SpatialTransformation()
 
     def forward(self, moving_image, moving_seg, fixed_image):
@@ -156,7 +206,10 @@ class VoxelMorph3d(nn.Module):
 class ShapeMorph3d(nn.Module):
     def __init__(self, in_channels=4, num_mods=2):
         super(ShapeMorph3d, self).__init__()
-        self.unet = UNet(in_channels, forseg=False)
+        ###################################################
+        # Regression UNet
+        self.unet = UNet(in_channels, for_seg=False)
+        ###################################################
         self.spatial_transform = SpatialTransformation()
         self.num_mods = num_mods
 

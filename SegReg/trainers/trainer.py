@@ -234,7 +234,7 @@ class RS3DTrainer:
                 self.optimizer.zero_grad()
 
             # validate model every [validate_after_iters] steps
-            if self.num_iterations % 1 == 0:  # self.validate_after_iters == 0:
+            if self.num_iterations % self.validate_after_iters == 0:
 
                 # set the model in eval mode
                 self.model.eval()

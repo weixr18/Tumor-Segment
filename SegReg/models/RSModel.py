@@ -7,7 +7,12 @@ from .voxelmorph import UNet, ShapeMorph3d
 class Segmenter(nn.Module):
     def __init__(self, modality=3, num_of_cls=1):
         super(Segmenter, self).__init__()
-        self.nets = UNet(modality, modality * num_of_cls, forseg=True)
+        ####################################################################
+        # Segmenter UNet
+        self.nets = UNet(in_channels=modality,
+                         out_channels=modality*num_of_cls,
+                         for_seg=True)
+        ####################################################################
         self.modality = modality
         self.num_of_cls = num_of_cls
 
