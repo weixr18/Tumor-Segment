@@ -49,13 +49,16 @@ class RSModel(nn.Module):
             dec_nf=dec_nf,
             use_bn=use_bn,
             group_num=group_num,
-            use_separable=use_separable
+            use_separable=use_separable,
         )
         self.register = ShapeMorph3d(
             enc_nf=enc_nf,
             dec_nf=dec_nf,
             in_channels=4,
-            num_mods=num_modality
+            num_mods=num_modality,
+            use_bn=use_bn,
+            group_num=group_num,
+            use_separable=use_separable,
         )
         self.num_modality = num_modality
         self.num_cls = num_cls

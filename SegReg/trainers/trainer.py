@@ -4,12 +4,14 @@ import threading
 import joblib
 import six
 import cv2
-import torch
 import numpy as np
 import SimpleITK as sitk
+import torch
 import torch.nn as nn
 from torch.optim.lr_scheduler import ReduceLROnPlateau
+# from torch.cuda.amp import autocast as autocast
 from tensorboardX import SummaryWriter
+from torchsummary import summary
 
 from utils import utils
 
@@ -391,8 +393,6 @@ class RS3DTrainer:
         # forward pass
         Ls1, Ls2, Lr1, Lr2, Li, S0, I1, S1, I2, S2, S3 = self.model(
             input, target, self.baseline)
-        # compute the loss
-        # loss=Ls1+Ls2+Lr1+Lr2+Li
         return Ls1, Ls2, Lr1, Lr2, Li, S0, I1, S1, I2, S2, S3
 
     def _is_best_eval_score(self, eval_score):

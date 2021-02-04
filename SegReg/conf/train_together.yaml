@@ -14,7 +14,7 @@ model:
   # use batch normalization
   use_batch_norm: false
   # number of groups in the groupconv
-  group_num: 4
+  group_num: 1
   # encoder feature map channels
   encoder_channels: [16, 32, 32, 32]
   # encoder_channels: [8, 16, 16, 32]

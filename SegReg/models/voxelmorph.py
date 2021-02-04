@@ -71,8 +71,16 @@ class UNet(nn.Module):
 
             # Make flow weights + bias small. Not sure this is necessary.
             nd = Normal(0, 1e-5)
-            flow.weight = nn.Parameter(nd.sample(flow.weight.shape))
-            flow.bias = nn.Parameter(torch.zeros(flow.bias.shape))
+            if hasattr(flow, "weight"):
+                flow.weight = nn.Parameter(nd.sample(flow.weight.shape))
+                flow.bias = nn.Parameter(torch.zeros(flow.bias.shape))
+            elif hasattr(flow, "weights"):
+                for weight in flow.weights:
+                    weight = nn.Parameter(nd.sample(weight.shape))
+                for bias in flow.biases:
+                    bias = nn.Parameter(nd.sample(bias.shape))
+            else:
+                print("Error: no weight or bias parameter in conv layer.")
 
             if self.use_bn:
                 last_bn = nn.BatchNorm3d(3)
@@ -142,7 +150,7 @@ class UNet(nn.Module):
 
 class SeparableConv3d(nn.Module):
     def __init__(self, in_channels, out_channels, kernel_size,
-                 stride=1, padding=0, dilation=1, groups=1, bias=False):
+                 stride=1, padding=0, dilation=1, groups=1, bias=True):
         super(SeparableConv3d, self).__init__()
 
         self.depthwise = nn.Conv3d(
@@ -153,6 +161,8 @@ class SeparableConv3d(nn.Module):
             in_channels, out_channels, kernel_size=1,
             stride=1, padding=0, dilation=1, groups=1, bias=bias
         )
+        #self.weights = (self.depthwise.weight, self.pointwise.weight)
+        #self.biases = (self.depthwise.bias, self.pointwise.bias)
 
     def forward(self, x):
         x = self.depthwise(x)
