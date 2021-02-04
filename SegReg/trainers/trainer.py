@@ -175,13 +175,13 @@ class RS3DTrainer:
         """
 
         # initialize statistic recorders
-        # train_losses = utils.RunningAverage()
+        train_losses = utils.RunningAverage()
+        train_eval_scores = utils.RunningAverage()
         # trains1_losses = utils.RunningAverage()
         # trains2_losses = utils.RunningAverage()
         # trainr1_losses = utils.RunningAverage()
         # trainr2_losses = utils.RunningAverage()
         # traini_losses = utils.RunningAverage()
-        # train_eval_scores = utils.RunningAverage()
 
         # sets the model in training mode
         self.model.train()
@@ -211,14 +211,14 @@ class RS3DTrainer:
             eval_score = self.eval_criterion(S3, target)
 
             # log loss & evaluation statistics
-            # train_losses.update(loss.mean().item(), self._batch_size(input))
+            train_losses.update(loss.mean().item(), self._batch_size(input))
+            train_eval_scores.update(
+                eval_score.mean().item(), self._batch_size(input))
             # trains1_losses.update(Ls1.mean().item(), self._batch_size(input))
             # trains2_losses.update(Ls2.mean().item(), self._batch_size(input))
             # trainr1_losses.update(Lr1.mean().item(), self._batch_size(input))
             # trainr2_losses.update(Lr2.mean().item(), self._batch_size(input))
             # traini_losses.update(Li.mean().item(), self._batch_size(input))
-            # train_eval_scores.update(
-            #     eval_score.mean().item(), self._batch_size(input))
 
             self._log_stats(
                 'train', loss, eval_score, Ls1, Ls2,
@@ -264,7 +264,8 @@ class RS3DTrainer:
                 self._log_params()
 
                 self._log_images(input, target, S0, I1,
-                                 S1, I2, S2, S3, 'train_')
+                                 S1, I2, S2, S3, prefix='train_',
+                                 num_iters=self.num_iterations)
 
             # stop judgement
             if self.should_stop():
@@ -336,9 +337,9 @@ class RS3DTrainer:
                                   self._batch_size(input))
 
                 # log images
-                if i % 100 == 0:
+                if i % self.log_after_iters == 0:
                     self._log_images(
-                        input, target, S0, I1, S1, I2, S2, S3, 'val_'
+                        input, target, S0, I1, S1, I2, S2, S3, num_iters=i, prefix='val_'
                     )
 
                 # stop validation
@@ -465,7 +466,7 @@ class RS3DTrainer:
         _max = pic.max()
         return (pic - _min) / (_max - _min)
 
-    def _log_images(self, input, segs, seg0, reg1, seg1, reg2, seg2, seg3, prefix=''):
+    def _log_images(self, input, segs, seg0, reg1, seg1, reg2, seg2, seg3, num_iters, prefix=''):
         """
         segs = (segs >= 0.)*1.0
         seg0 = (seg0 >= 0.) * 1.0
@@ -490,17 +491,15 @@ class RS3DTrainer:
             'reg_reg_input': reg2,
             'reg_seg2': seg3,
         }
-        # self._log_images(input, target, S0, I1, S1, I2, S2, S3, 'train_')
+
         img_sources = {}
         for name, batch in inputs_map.items():
-            if isinstance(batch, list) or isinstance(batch, tuple):
-                for i, b in enumerate(batch):
-                    img_sources[f'{name}{i}'] = b.data.cpu().numpy()
-            else:
-                img_sources[name] = batch.data.cpu().numpy()
-        idx_slice = torch.argmax(segs.sum(-1).sum(-1).sum(1), -1)
+            img_sources[name] = batch.data.cpu().numpy()
+
+        # find the slice which has biggest area in the volume. [N]
+        idx_slice = torch.argmax(segs.sum(-1).sum(-1).sum(1), -1).byte()
         for i, (name, batch) in enumerate(img_sources.items()):
-            for tag, image in self.tensorboard_formatter(name, batch, idx_slice):
+            for tag, image in self.tensorboard_formatter(name, batch, idx_slice, num_iters):
                 self.writer.add_image(
                     prefix + tag, image, self.num_iterations, dataformats='CHW')
 

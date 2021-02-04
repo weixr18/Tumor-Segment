@@ -202,7 +202,7 @@ class _TensorboardFormatter:
     def __init__(self, **kwargs):
         pass
 
-    def __call__(self, name, batch, idx_slice):
+    def __call__(self, name, batch, idx_slice, num_iters=None):
         """
         Transform a batch to a series of tuples of the form (tag, img), where `tag` corresponds to the image tag
         and `img` is the image itself.
@@ -227,7 +227,7 @@ class _TensorboardFormatter:
 
        # assert name in ['inputs', 'targets', 'predictions']
 
-        tagged_images = self.process_batch(name, batch, idx_slice)
+        tagged_images = self.process_batch(name, batch, idx_slice, num_iters)
 
         return list(map(_check_img, tagged_images))
 
@@ -240,11 +240,15 @@ class DefaultTensorboardFormatter(_TensorboardFormatter):
         super().__init__(**kwargs)
         self.skip_last_target = skip_last_target
 
-    def process_batch(self, name, batch, idx_slice=None):
+    def process_batch(self, name, batch, idx_slice=None, num_iters=None):
         if name == 'targets' and self.skip_last_target:
             batch = batch[:, :-1, ...]
 
-        tag_template = '{}/batch_{}/channel_{}/slice_{}'
+        if num_iters is not None:
+            tag_template = '{}/iter_' + \
+                str(num_iters) + '/batchid_{}/channel_{}/slice_{}'
+        else:
+            tag_template = '{}/batchid_{}/channel_{}/slice_{}'
 
         tagged_images = []
 
@@ -278,7 +282,7 @@ class DefaultTensorboardFormatter(_TensorboardFormatter):
                                     slice_idx[batch_idx], ...]
                         tagged_images.append((tag, self._normalize_img(img)))
             else:
-                # batch hafrom sklearn.decomposition import PCAs no channel dim: NDHW
+                # batch has no channel dim: NDHW
                 slice_idx = batch.shape[1] // 2  # get the middle slice
                 for batch_idx in range(batch.shape[0]):
                     tag = tag_template.format(name, batch_idx, 0, slice_idx)
