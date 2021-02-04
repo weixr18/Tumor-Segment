@@ -32,10 +32,10 @@ def load_config(train):
                             required=False,
                             default='conf/train_together.yaml')
         parser.add_argument('--debug',
-                            type=bool,
+                            type=int,
                             help='Use fake data list while debug',
                             required=False,
-                            default='false')
+                            default=0)
     else:
         parser.add_argument(
             '--config',
@@ -46,7 +46,7 @@ def load_config(train):
 
     args = parser.parse_args()
     config = _load_config_yaml(args.config)
-    if (args.debug):
+    if (args.debug != 0):
         config['loaders']['train']['file_paths'] = ['conf/fake.list']
         config['loaders']['val']['file_paths'] = ['conf/fake.list']
 
@@ -146,7 +146,8 @@ def _create_trainer(config, model, optimizer, lr_scheduler, loss_criterion,
             tensorboard_formatter=tensorboard_formatter,
             skip_train_validation=skip_train_validation,
             multi_head=trainer_config['baseline_model'],
-            dist_t=trainer_config['transformed'])
+            dist_t=trainer_config['transformed'],
+            use_amp=trainer_config['use_amp'])
 
 
 def _create_optimizer(config, model):

@@ -67,18 +67,15 @@ class UNet(nn.Module):
             flow = conv_fn(
                 in_channels=dec_nf[-1],
                 out_channels=3,  # dimension=3
-                kernel_size=3, padding=1)
+                kernel_size=3, padding=1, bias=False)
 
             # Make flow weights + bias small. Not sure this is necessary.
             nd = Normal(0, 1e-5)
             if hasattr(flow, "weight"):
                 flow.weight = nn.Parameter(nd.sample(flow.weight.shape))
-                flow.bias = nn.Parameter(torch.zeros(flow.bias.shape))
             elif hasattr(flow, "weights"):
                 for weight in flow.weights:
                     weight = nn.Parameter(nd.sample(weight.shape))
-                for bias in flow.biases:
-                    bias = nn.Parameter(nd.sample(bias.shape))
             else:
                 print("Error: no weight or bias parameter in conv layer.")
 

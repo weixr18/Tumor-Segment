@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+from torch.cuda.amp import autocast as autocast
 
 from .voxelmorph import UNet, ShapeMorph3d
 
@@ -25,6 +26,7 @@ class Segmenter(nn.Module):
         self.modality = modality
         self.num_of_cls = num_of_cls
 
+    # @autocast()
     def forward(self, x):
         if isinstance(x, list):
             x = torch.cat(x, 1)
@@ -66,6 +68,7 @@ class RSModel(nn.Module):
         self.reg_loss = reg_loss
         self.imp_loss = imp_loss
 
+    # @autocast()
     def forward(self, I: list, S: list, baseline=False):
         # S=S+1
 

@@ -58,7 +58,7 @@ class RS3DTrainer:
                  validate_iters=None, num_iterations=1, num_epoch=0,
                  eval_score_higher_is_better=True, best_eval_score=None,
                  tensorboard_formatter=None, skip_train_validation=False,
-                 multi_head=False, dist_t=True):
+                 multi_head=False, dist_t=True, use_amp=False):
 
         self.model = model
         self.optimizer = optimizer
@@ -75,6 +75,7 @@ class RS3DTrainer:
         self.validate_iters = validate_iters
         self.eval_score_higher_is_better = eval_score_higher_is_better
         self.baseline = multi_head
+        self.use_amp = use_amp
         logger.info(model)
         logger.info(
             f'eval_score_higher_is_better: {eval_score_higher_is_better}')
@@ -196,8 +197,9 @@ class RS3DTrainer:
             input, target, _ = self._split_training_batch(t)
             target = target.cuda()
 
-            # automatically adjust precision
-            with autocast():
+            S0, I1, S1, I2, S2, S3 = 0, 0, 0, 0, 0, 0
+
+            def FORWARD():
                 # forward pass
                 Ls1, Ls2, Lr1, Lr2, Li, S0, I1, S1, I2, S2, S3 = self._forward_pass(
                     input, target)
@@ -221,17 +223,19 @@ class RS3DTrainer:
                 self._log_stats(
                     'train', loss, eval_score, Ls1, Ls2, Lr1, Lr2, Li
                 )
+                return loss, S0, I1, S1, I2, S2, S3
 
-            # compute gradients and update parameters
-            # loss.backward()
-            self.scaler.scale(loss).backward()
-            self.scaler.step(self.optimizer)
-            self.scaler.update()
-
-            # flush gradient every [n] steps
-            # if self.num_iterations % 1 == 0:
-            #     self.optimizer.step()
-            #     self.optimizer.zero_grad()
+            # automatically adjust precision
+            if self.use_amp:
+                with autocast():
+                    loss, S0, I1, S1, I2, S2, S3 = FORWARD()
+                self.scaler.scale(loss).backward()
+                self.scaler.step(self.optimizer)
+                self.scaler.update()
+            else:
+                loss, S0, I1, S1, I2, S2, S3 = FORWARD()
+                loss.backward()
+                self.optimizer.step()
 
             # validate model every [validate_after_iters] steps
             if self.num_iterations % self.validate_after_iters == 0:
@@ -259,13 +263,14 @@ class RS3DTrainer:
             # tensorboard log parameters and images
             if self.num_iterations % self.log_after_iters == 0:
                 logger.info(
-                    f'Training stats. Loss: {train_losses.avg}. Evaluation score: {train_eval_scores.avg}'
+                    f'Training stats. Loss: {train_losses.avg}. \
+                        Evaluation score: {train_eval_scores.avg}'
                 )
                 self._log_params()
-
-                self._log_images(input, target, S0, I1,
-                                 S1, I2, S2, S3, prefix='train_',
-                                 num_iters=self.num_iterations)
+                self._log_images(
+                    input, target, S0, I1, S1, I2, S2, S3,
+                    prefix='train_', num_iters=self.num_iterations
+                )
 
             # stop judgement
             if self.should_stop():
