@@ -607,7 +607,7 @@ def ncc_loss(I, J, win=None):
     padding = [pad_no] * ndims
     I_var, J_var, cross = compute_local_sums(
         I, J, sum_filt, stride, padding, win)
-    cc = cross * cross / (I_var * J_var + 1e-5)
+    cc = cross * cross / (I_var * J_var + 1e-4)
     return (1-torch.mean(cc))/2
 
 

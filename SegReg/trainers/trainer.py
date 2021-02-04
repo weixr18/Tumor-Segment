@@ -9,7 +9,8 @@ import SimpleITK as sitk
 import torch
 import torch.nn as nn
 from torch.optim.lr_scheduler import ReduceLROnPlateau
-# from torch.cuda.amp import autocast as autocast
+from torch.cuda.amp import autocast as autocast
+from torch.cuda.amp import GradScaler
 from tensorboardX import SummaryWriter
 from torchsummary import summary
 
@@ -153,6 +154,9 @@ class RS3DTrainer:
                    multi_head=multi_head, dist_t=dist_t)
 
     def fit(self):
+
+        self.scaler = GradScaler()
+
         for _ in range(self.num_epoch, self.max_num_epochs):
             # train for one epoch
             should_terminate = self.train(self.loaders['train'])
@@ -179,11 +183,6 @@ class RS3DTrainer:
         # initialize statistic recorders
         train_losses = utils.RunningAverage()
         train_eval_scores = utils.RunningAverage()
-        # trains1_losses = utils.RunningAverage()
-        # trains2_losses = utils.RunningAverage()
-        # trainr1_losses = utils.RunningAverage()
-        # trainr2_losses = utils.RunningAverage()
-        # traini_losses = utils.RunningAverage()
 
         # sets the model in training mode
         self.model.train()
@@ -197,43 +196,42 @@ class RS3DTrainer:
             input, target, _ = self._split_training_batch(t)
             target = target.cuda()
 
-            # forward pass
-            Ls1, Ls2, Lr1, Lr2, Li, S0, I1, S1, I2, S2, S3 = self._forward_pass(
-                input, target)
-            loss = Ls1 + Ls2 + Lr1 + Lr2 + Li
-            # summary for multiple GPUs
-            Ls1 = Ls1.sum()
-            Ls2 = Ls2.sum()
-            Lr1 = Lr1.sum()
-            Lr2 = Lr2.sum()
-            Li = Li.sum()
-            loss = loss.sum()
+            # automatically adjust precision
+            with autocast():
+                # forward pass
+                Ls1, Ls2, Lr1, Lr2, Li, S0, I1, S1, I2, S2, S3 = self._forward_pass(
+                    input, target)
+                loss = Ls1 + Ls2 + Lr1 + Lr2 + Li
+                # summary for multiple GPUs
+                Ls1 = Ls1.sum()
+                Ls2 = Ls2.sum()
+                Lr1 = Lr1.sum()
+                Lr2 = Lr2.sum()
+                Li = Li.sum()
+                loss = loss.sum()
 
-            # calc evaluation score
-            eval_score = self.eval_criterion(S3, target)
+                # calc evaluation score
+                eval_score = self.eval_criterion(S3, target)
 
-            # log loss & evaluation statistics
-            train_losses.update(loss.mean().item(), self._batch_size(input))
-            train_eval_scores.update(
-                eval_score.mean().item(), self._batch_size(input))
-            # trains1_losses.update(Ls1.mean().item(), self._batch_size(input))
-            # trains2_losses.update(Ls2.mean().item(), self._batch_size(input))
-            # trainr1_losses.update(Lr1.mean().item(), self._batch_size(input))
-            # trainr2_losses.update(Lr2.mean().item(), self._batch_size(input))
-            # traini_losses.update(Li.mean().item(), self._batch_size(input))
-
-            self._log_stats(
-                'train', loss, eval_score, Ls1, Ls2,
-                Lr1, Lr2, Li
-            )
+                # log loss & evaluation statistics
+                train_losses.update(
+                    loss.mean().item(), self._batch_size(input))
+                train_eval_scores.update(
+                    eval_score.mean().item(), self._batch_size(input))
+                self._log_stats(
+                    'train', loss, eval_score, Ls1, Ls2, Lr1, Lr2, Li
+                )
 
             # compute gradients and update parameters
-            loss.backward()
+            # loss.backward()
+            self.scaler.scale(loss).backward()
+            self.scaler.step(self.optimizer)
+            self.scaler.update()
 
             # flush gradient every [n] steps
-            if self.num_iterations % 1 == 0:
-                self.optimizer.step()
-                self.optimizer.zero_grad()
+            # if self.num_iterations % 1 == 0:
+            #     self.optimizer.step()
+            #     self.optimizer.zero_grad()
 
             # validate model every [validate_after_iters] steps
             if self.num_iterations % self.validate_after_iters == 0:
